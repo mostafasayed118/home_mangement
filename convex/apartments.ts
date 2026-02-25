@@ -60,28 +60,6 @@ export const getByStatus = query({
 });
 
 /**
- * Create a new apartment (alias for addApartment)
- */
-export const create = mutation({
-  args: {
-    floor: v.number(),
-    unitNumber: v.string(),
-    unitLabel: v.string(),
-    status: v.union(v.literal("occupied"), v.literal("vacant"), v.literal("maintenance")),
-    rentAmount: v.number(),
-  },
-  handler: async (ctx, args) => {
-    const now = Date.now();
-    const id = await ctx.db.insert("apartments", {
-      ...args,
-      createdAt: now,
-      updatedAt: now,
-    });
-    return id;
-  },
-});
-
-/**
  * Add a new apartment
  */
 export const addApartment = mutation({
@@ -153,16 +131,6 @@ export const updateApartment = mutation({
       ...updates,
       updatedAt: Date.now(),
     });
-  },
-});
-
-/**
- * Delete an apartment (alias for deleteApartment)
- */
-export const remove = mutation({
-  args: { id: v.id("apartments") },
-  handler: async (ctx, args) => {
-    await ctx.db.delete(args.id);
   },
 });
 

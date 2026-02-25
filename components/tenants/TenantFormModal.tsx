@@ -64,8 +64,35 @@ export function TenantFormModal({
   const [leaseEndDate, setLeaseEndDate] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
 
   const isEdit = !!tenant;
+
+  // Egyptian mobile phone validation regex: must start with 010, 011, 012, or 015
+  const EGYPTIAN_PHONE_REGEX = /^01[0125][0-9]{8}$/;
+
+  const validatePhone = (phoneNumber: string): boolean => {
+    if (!phoneNumber) {
+      setPhoneError("رقم الهاتف مطلوب");
+      return false;
+    }
+    if (!EGYPTIAN_PHONE_REGEX.test(phoneNumber)) {
+      setPhoneError("يجب أن يبدأ رقم الهاتف بـ 010 أو 011 أو 012 أو 015 ويتكون من 11 رقم");
+      return false;
+    }
+    setPhoneError(null);
+    return true;
+  };
+
+  const handlePhoneChange = (value: string) => {
+    setPhone(value);
+    // Only validate if user has started typing
+    if (value.length > 0) {
+      validatePhone(value);
+    } else {
+      setPhoneError(null);
+    }
+  };
 
   useEffect(() => {
     if (tenant) {
@@ -87,6 +114,7 @@ export function TenantFormModal({
       setLeaseEndDate("");
     }
     setError(null);
+    setPhoneError(null);
   }, [tenant, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -95,6 +123,12 @@ export function TenantFormModal({
     setIsLoading(true);
 
     try {
+      // Validate phone number
+      if (!validatePhone(phone)) {
+        setIsLoading(false);
+        return;
+      }
+
       // Validate lease dates: end date must be strictly after start date
       if (leaseStartDate && leaseEndDate) {
         const startTimestamp = new Date(leaseStartDate).getTime();
@@ -214,14 +248,20 @@ export function TenantFormModal({
               <Label htmlFor="phone" className="text-start">
                 الهاتف
               </Label>
-              <Input
-                id="phone"
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="col-span-3"
-                required
-              />
+              <div className="col-span-3">
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => handlePhoneChange(e.target.value)}
+                  placeholder="01XXXXXXXXX"
+                  className={phoneError ? "border-red-500 focus-visible:ring-red-500" : ""}
+                  required
+                />
+                {phoneError && (
+                  <p className="text-red-500 text-sm mt-1">{phoneError}</p>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-4 items-center gap-4">

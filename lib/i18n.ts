@@ -9,6 +9,7 @@ export const translations = {
   apartments: "الشقق",
   tenants: "المستأجرين",
   payments: "الدفعات",
+  invoices: "الفواتير",
   maintenanceNav: "الصيانة",
   buildingManager: "مدير المباني",
 

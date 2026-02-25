@@ -71,24 +71,24 @@ export function BuildingGrid({ apartments, payments }: BuildingGridProps) {
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-      <div className="flex items-center gap-2 mb-6">
-        <Building2 className="h-5 w-5 text-gray-600" />
-        <h2 className="text-lg font-semibold text-gray-900">{translations.buildingOverview}</h2>
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 sm:p-6 shadow-sm">
+      <div className="flex items-center gap-2 mb-4 sm:mb-6">
+        <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600 dark:text-gray-400" />
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">{translations.buildingOverview}</h2>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {floors.map((floor) => {
           const floorApartments = apartments
             .filter((a) => a.floor === floor)
             .sort((a, b) => a.unitNumber.localeCompare(b.unitNumber, 'ar'));
 
           return (
-            <div key={floor} className="flex items-center gap-4">
-              <div className="w-16 text-sm font-medium text-gray-500 text-end">
+            <div key={floor} className="flex items-start sm:items-center gap-2 sm:gap-4">
+              <div className="w-12 sm:w-16 text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 text-end flex-shrink-0 pt-2 sm:pt-0">
                 {translations.floor} {floor}
               </div>
-              <div className="flex-1 grid grid-cols-2 gap-3">
+              <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                 {floorApartments.length > 0 ? (
                   floorApartments.map((apartment) => {
                     const paymentStatus = getPaymentStatus(apartment._id);
@@ -98,29 +98,29 @@ export function BuildingGrid({ apartments, payments }: BuildingGridProps) {
                     return (
                       <div
                         key={apartment._id}
-                        className="flex items-center justify-between p-3 rounded-lg bg-gray-50 border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
+                        className="flex items-center justify-between p-2 sm:p-3 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:shadow-md transition-shadow cursor-pointer"
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 sm:gap-3">
                           <div
-                            className={`h-3 w-3 rounded-full ${colorClass}`}
+                            className={`h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full ${colorClass}`}
                           />
                           <div>
-                            <p className="text-sm font-medium text-gray-900">
+                            <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
                               {apartment.unitLabel}
                             </p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
                               {formatCurrencyEGP(apartment.rentAmount)}{translations.perMonth}
                             </p>
                           </div>
                         </div>
-                        <span className="text-xs font-medium text-gray-600">
+                        <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
                           {statusText}
                         </span>
                       </div>
                     );
                   })
                 ) : (
-                  <div className="col-span-2 text-center text-gray-400 text-sm py-2">
+                  <div className="col-span-1 sm:col-span-2 text-center text-gray-400 dark:text-gray-500 text-xs sm:text-sm py-2">
                     لا توجد شقق في هذا الدور
                   </div>
                 )}
@@ -131,32 +131,32 @@ export function BuildingGrid({ apartments, payments }: BuildingGridProps) {
       </div>
 
       {/* Legend */}
-      <div className="mt-6 pt-4 border-t border-gray-200">
-        <p className="text-xs font-medium text-gray-500 mb-3">{translations.legend}</p>
-        <div className="flex flex-wrap gap-4">
-          <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-full bg-green-500" />
-            <span className="text-xs text-gray-600">{translations.paid}</span>
+      <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-700">
+        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 sm:mb-3">{translations.legend}</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-green-500" />
+            <span className="text-xs text-gray-600 dark:text-gray-300">{translations.paid}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-full bg-yellow-500" />
-            <span className="text-xs text-gray-600">{translations.pending}</span>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-yellow-500" />
+            <span className="text-xs text-gray-600 dark:text-gray-300">{translations.pending}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-full bg-red-500" />
-            <span className="text-xs text-gray-600">{translations.late}</span>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-red-500" />
+            <span className="text-xs text-gray-600 dark:text-gray-300">{translations.late}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-full bg-purple-500" />
-            <span className="text-xs text-gray-600">{translations.partial}</span>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-purple-500" />
+            <span className="text-xs text-gray-600 dark:text-gray-300">{translations.partial}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-full bg-gray-400" />
-            <span className="text-xs text-gray-600">{translations.vacant}</span>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-gray-400" />
+            <span className="text-xs text-gray-600 dark:text-gray-300">{translations.vacant}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-full bg-blue-500" />
-            <span className="text-xs text-gray-600">{translations.maintenanceStatus}</span>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-blue-500" />
+            <span className="text-xs text-gray-600 dark:text-gray-300">{translations.maintenanceStatus}</span>
           </div>
         </div>
       </div>

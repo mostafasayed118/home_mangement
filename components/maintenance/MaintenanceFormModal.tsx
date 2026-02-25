@@ -52,7 +52,7 @@ export function MaintenanceFormModal({
   const addMaintenance = useMutation(api.maintenance.addMaintenanceRecord);
   const updateMaintenance = useMutation(api.maintenance.updateMaintenance);
 
-  const [apartmentId, setApartmentId] = useState<string>("");
+  const [apartmentId, setApartmentId] = useState<string>("none");
   const [title, setTitle] = useState("");
   const [cost, setCost] = useState(0);
   const [date, setDate] = useState("");
@@ -65,7 +65,7 @@ export function MaintenanceFormModal({
 
   useEffect(() => {
     if (maintenance) {
-      setApartmentId(maintenance.apartmentId || "");
+      setApartmentId(maintenance.apartmentId || "none");
       setTitle(maintenance.title);
       setCost(maintenance.cost);
       setDate(new Date(maintenance.date).toISOString().split("T")[0]);
@@ -73,7 +73,7 @@ export function MaintenanceFormModal({
       setDescription(maintenance.description || "");
     } else {
       // Reset form for new maintenance
-      setApartmentId("");
+      setApartmentId("none");
       setTitle("");
       setCost(0);
       setDate(new Date().toISOString().split("T")[0]);
@@ -104,11 +104,11 @@ export function MaintenanceFormModal({
           date: new Date(date).getTime(),
           status,
           description: description || undefined,
-          apartmentId: apartmentId ? apartmentId as Id<"apartments"> : undefined,
+          apartmentId: apartmentId && apartmentId !== "none" ? apartmentId as Id<"apartments"> : undefined,
         });
       } else {
         await addMaintenance({
-          apartmentId: apartmentId ? apartmentId as Id<"apartments"> : undefined,
+          apartmentId: apartmentId && apartmentId !== "none" ? apartmentId as Id<"apartments"> : undefined,
           title,
           cost,
           date: new Date(date).getTime(),
@@ -163,7 +163,7 @@ export function MaintenanceFormModal({
                   <SelectValue placeholder="اختر الشقة (اختياري)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">عام (المبنى ككل)</SelectItem>
+                  <SelectItem value="none">عام (المبنى ككل)</SelectItem>
                   {apartments?.map((apt: Apartment) => (
                     <SelectItem key={apt._id} value={apt._id}>
                       {apt.unitLabel}

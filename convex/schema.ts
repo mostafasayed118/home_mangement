@@ -80,4 +80,24 @@ export default defineSchema({
     .index("by_apartmentId", ["apartmentId"])
     .index("by_status", ["status"])
     .index("by_date", ["date"]),
+
+  // Invoices table - tracks utility bills and other invoices
+  invoices: defineTable({
+    apartmentId: v.id("apartments"),
+    amount: v.number(),
+    type: v.string(),           // e.g., "Electricity", "Water", "Maintenance"
+    date: v.number(),           // Timestamp
+    status: v.union(
+      v.literal("paid"),
+      v.literal("pending")
+    ),
+    receiptImageId: v.optional(v.id("_storage")), // Storage ID for uploaded receipt image
+    description: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_apartmentId", ["apartmentId"])
+    .index("by_status", ["status"])
+    .index("by_date", ["date"])
+    .index("by_type", ["type"]),
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
@@ -23,6 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useToast } from "@/lib/toast";
 
 interface ApartmentFormModalProps {
   open: boolean;
@@ -44,6 +45,7 @@ export function ApartmentFormModal({
 }: ApartmentFormModalProps) {
   const addApartment = useMutation(api.apartments.addApartment);
   const updateApartment = useMutation(api.apartments.updateApartment);
+  const { addToast } = useToast();
 
   const [floor, setFloor] = useState(apartment?.floor ?? 1);
   const [unitNumber, setUnitNumber] = useState(apartment?.unitNumber ?? "");
@@ -51,21 +53,32 @@ export function ApartmentFormModal({
     "occupied" | "vacant" | "maintenance"
   >(apartment?.status ?? "vacant");
   const [rentAmount, setRentAmount] = useState(apartment?.rentAmount ?? 0);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const isEdit = !!apartment;
 
+  // Reset form when modal opens/closes or apartment changes
+  useEffect(() => {
+    if (open) {
+      setFloor(apartment?.floor ?? 1);
+      setUnitNumber(apartment?.unitNumber ?? "");
+      setStatus(apartment?.status ?? "vacant");
+      setRentAmount(apartment?.rentAmount ?? 0);
+      setError(null);
+    }
+  }, [open, apartment]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setIsLoading(true);
+    setIsSubmitting(true);
 
     try {
       // Validate rent amount - must be strictly greater than 0
       if (rentAmount <= 0) {
         setError("يجب أن يكون الإيجار الشهري أكبر من صفر");
-        setIsLoading(false);
+        setIsSubmitting(false);
         return;
       }
 
@@ -80,6 +93,7 @@ export function ApartmentFormModal({
           status,
           rentAmount,
         });
+        addToast("تم تحديث الشقة بنجاح", "success");
       } else {
         await addApartment({
           floor,
@@ -88,6 +102,7 @@ export function ApartmentFormModal({
           status,
           rentAmount,
         });
+        addToast("تم إضافة الشقة بنجاح", "success");
       }
 
       onOpenChange(false);
@@ -100,8 +115,9 @@ export function ApartmentFormModal({
     } catch (error) {
       console.error("Error saving apartment:", error);
       setError("حدث خطأ أثناء حفظ الشقة");
+      addToast("حدث خطأ أثناء حفظ الشقة", "error");
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -204,8 +220,8 @@ export function ApartmentFormModal({
             >
               إلغاء
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? "جاري الحفظ..." : isEdit ? "تحديث" : "إضافة"}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "جاري الحفظ..." : isEdit ? "تحديث" : "إضافة"}
             </Button>
           </DialogFooter>
         </form>
