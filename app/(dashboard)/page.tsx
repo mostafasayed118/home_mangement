@@ -4,6 +4,7 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { BuildingGrid } from "@/components/dashboard/BuildingGrid";
+import { ExpiringLeasesAlert } from "@/components/dashboard/ExpiringLeasesAlert";
 import { DollarSign, TrendingUp, TrendingDown, Home, AlertCircle } from "lucide-react";
 import { formatCurrencyEGP, translations, getArabicPlural } from "@/lib/i18n";
 
@@ -82,6 +83,11 @@ export default function DashboardPage() {
             </div>
           </div>
         )}
+
+        {/* Expiring Leases Alert */}
+        <div className="mb-6 lg:mb-8">
+          <ExpiringLeasesAlert />
+        </div>
 
         {/* Building Grid */}
         <BuildingGrid apartments={apartments} payments={payments} />

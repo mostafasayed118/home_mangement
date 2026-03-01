@@ -259,6 +259,7 @@ export const addTenant = mutation({
     depositAmount: v.number(),
     leaseStartDate: v.number(),
     leaseEndDate: v.number(),
+    contractFileId: v.optional(v.id("_storage")),
   },
   handler: async (ctx, args) => {
     // Verify the apartment exists
@@ -310,6 +311,7 @@ export const updateTenant = mutation({
     depositAmount: v.optional(v.number()),
     leaseStartDate: v.optional(v.number()),
     leaseEndDate: v.optional(v.number()),
+    contractFileId: v.optional(v.id("_storage")),
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;
@@ -511,5 +513,31 @@ export const updateStatus = mutation({
     });
     
     // Removed: return newStatus; - Convex mutations don't need to return values
+  },
+});
+
+/**
+ * Generate an upload URL for tenant contract files
+ */
+export const generateContractUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+/**
+ * Update tenant contract file
+ */
+export const updateTenantContract = mutation({
+  args: {
+    tenantId: v.id("tenants"),
+    contractFileId: v.id("_storage"),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.tenantId, {
+      contractFileId: args.contractFileId,
+      updatedAt: Date.now(),
+    });
   },
 });

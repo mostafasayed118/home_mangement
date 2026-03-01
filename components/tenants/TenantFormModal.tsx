@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
@@ -54,6 +54,8 @@ export function TenantFormModal({
   const apartments = useQuery(api.apartments.getAll);
   const addTenant = useMutation(api.tenants.addTenant);
   const updateTenant = useMutation(api.tenants.updateTenant);
+  const generateContractUploadUrl = useMutation(api.tenants.generateContractUploadUrl);
+  const updateTenantContract = useMutation(api.tenants.updateTenantContract);
 
   const [apartmentId, setApartmentId] = useState<string>("");
   const [name, setName] = useState("");
@@ -65,6 +67,11 @@ export function TenantFormModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [phoneError, setPhoneError] = useState<string | null>(null);
+  
+  // Contract file upload
+  const [contractFile, setContractFile] = useState<File | null>(null);
+  const [isUploadingContract, setIsUploadingContract] = useState(false);
+  const contractFileInputRef = useRef<HTMLInputElement>(null);
 
   const isEdit = !!tenant;
 
@@ -94,6 +101,62 @@ export function TenantFormModal({
     }
   };
 
+  // Upload contract file and return the storage ID
+  const uploadContractFile = async (file: File): Promise<string | null> => {
+    // Check file size (10MB max)
+    const MAX_FILE_SIZE = 10 * 1024 * 1024;
+    if (file.size > MAX_FILE_SIZE) {
+      setError("حجم الملف كبير جداً (الحد الأقصى 10 ميجابايت)");
+      return null;
+    }
+
+    try {
+      // Step 1: Get upload URL
+      const uploadUrl = await generateContractUploadUrl({});
+
+      // Step 2: Upload file to the URL
+      const result = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+
+      if (!result.ok) {
+        throw new Error("Failed to upload file");
+      }
+
+      // Get the storage ID from response
+      const responseText = await result.text();
+      let storageId: string | null = null;
+      
+      // Try header first (older Convex versions)
+      const headerStorageId = result.headers.get("x-convex-stor-id");
+      if (headerStorageId) {
+        storageId = headerStorageId;
+      } else {
+        // Try parsing from body (newer Convex versions)
+        try {
+          const responseJson = JSON.parse(responseText);
+          storageId = responseJson.storageId || null;
+        } catch (e) {
+          console.error("Failed to parse response:", responseText);
+        }
+      }
+
+      if (!storageId) {
+        console.error("Upload response:", result);
+        console.error("Response status:", result.status);
+        throw new Error("Failed to get storage ID");
+      }
+
+      return storageId;
+    } catch (uploadError) {
+      console.error("Error uploading contract:", uploadError);
+      setError("حدث خطأ في رفع ملف العقد");
+      return null;
+    }
+  };
+
   useEffect(() => {
     if (tenant) {
       setApartmentId(tenant.apartmentId);
@@ -112,6 +175,7 @@ export function TenantFormModal({
       setDepositAmount(0);
       setLeaseStartDate("");
       setLeaseEndDate("");
+      setContractFile(null);
     }
     setError(null);
     setPhoneError(null);
@@ -156,12 +220,42 @@ export function TenantFormModal({
           leaseStartDate: new Date(leaseStartDate).getTime(),
           leaseEndDate: new Date(leaseEndDate).getTime(),
         });
+        
+        // If there's a new contract file, upload it
+        if (contractFile) {
+          setIsUploadingContract(true);
+          const contractFileId = await uploadContractFile(contractFile);
+          setIsUploadingContract(false);
+          
+          if (contractFileId) {
+            await updateTenantContract({
+              tenantId: tenant._id,
+              contractFileId: contractFileId as Id<"_storage">,
+            });
+          }
+        }
       } else {
         if (!apartmentId) {
           setError("الرجاء اختيار الشقة");
           setIsLoading(false);
           return;
         }
+        
+        let contractFileId: string | undefined = undefined;
+        
+        // Upload contract file if provided
+        if (contractFile) {
+          setIsUploadingContract(true);
+          const uploadedId = await uploadContractFile(contractFile);
+          setIsUploadingContract(false);
+          
+          if (!uploadedId) {
+            setIsLoading(false);
+            return; // Error already set in uploadContractFile
+          }
+          contractFileId = uploadedId;
+        }
+        
         await addTenant({
           apartmentId: apartmentId as Id<"apartments">,
           name,
@@ -170,6 +264,7 @@ export function TenantFormModal({
           depositAmount,
           leaseStartDate: new Date(leaseStartDate).getTime(),
           leaseEndDate: new Date(leaseEndDate).getTime(),
+          contractFileId: contractFileId as Id<"_storage"> | undefined,
         });
       }
 
@@ -319,6 +414,51 @@ export function TenantFormModal({
                 required
               />
             </div>
+
+            {/* Contract File Upload */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="contractFile" className="text-start">
+                عقد الإيجار
+              </Label>
+              <div className="col-span-3">
+                <input
+                  ref={contractFileInputRef}
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => setContractFile(e.target.files?.[0] || null)}
+                  className="hidden"
+                  id="contract-file-upload"
+                />
+                <label
+                  htmlFor="contract-file-upload"
+                  className="flex items-center justify-center w-full h-10 px-4 transition bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-md cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900"
+                >
+                  {contractFile ? (
+                    <span className="text-sm text-green-600 dark:text-green-400 truncate">
+                      {contractFile.name}
+                    </span>
+                  ) : (
+                    <span className="text-sm text-gray-500">
+                      اختر ملف (PDF أو صورة)
+                    </span>
+                  )}
+                </label>
+                {contractFile && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setContractFile(null);
+                      if (contractFileInputRef.current) {
+                        contractFileInputRef.current.value = "";
+                      }
+                    }}
+                    className="text-xs text-red-500 mt-1 hover:underline"
+                  >
+                    إزالة الملف
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
 
           <DialogFooter>
@@ -329,8 +469,10 @@ export function TenantFormModal({
             >
               إلغاء
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? "جاري الحفظ..." : isEdit ? "تحديث" : "إضافة"}
+            <Button type="submit" disabled={isLoading || isUploadingContract}>
+              {isLoading || isUploadingContract 
+                ? (isUploadingContract ? "جاري رفع العقد..." : "جاري الحفظ...") 
+                : (isEdit ? "تحديث" : "إضافة")}
             </Button>
           </DialogFooter>
         </form>

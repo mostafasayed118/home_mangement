@@ -15,6 +15,7 @@ import {
   LogOut,
   User,
   BarChart,
+  FolderOpen,
 } from "lucide-react";
 import { translations } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
@@ -26,6 +27,7 @@ const navigation = [
   { name: translations.tenants, href: "/tenants", icon: Users },
   { name: translations.payments, href: "/payments", icon: CreditCard },
   { name: translations.invoices, href: "/invoices", icon: FileText },
+  { name: "وثائق العمارة", href: "/documents", icon: FolderOpen },
   { name: translations.maintenanceNav, href: "/maintenance", icon: Wrench },
   { name: translations.summaries, href: "/summaries", icon: BarChart },
 ];

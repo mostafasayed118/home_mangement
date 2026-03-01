@@ -67,6 +67,7 @@ export default defineSchema({
     depositAmount: v.number(),   // Security deposit
     leaseStartDate: v.number(),  // Timestamp
     leaseEndDate: v.number(),    // Timestamp
+    contractFileId: v.optional(v.id("_storage")), // Lease contract file
     isActive: v.boolean(),
     status: v.optional(v.union(
       v.literal("active"),
@@ -167,4 +168,16 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_month_year", ["month", "year"]),
+
+  // Documents table - stores building documents (water bills, ownership papers, etc.)
+  documents: defineTable({
+    title: v.string(),
+    type: v.string(), // e.g., "فاتورة مياه", "ملكية", "عقد", "أخرى"
+    fileId: v.id("_storage"),
+    uploadDate: v.number(),
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_type", ["type"])
+    .index("by_uploadDate", ["uploadDate"]),
 });

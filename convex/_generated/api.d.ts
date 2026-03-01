@@ -10,6 +10,7 @@
 
 import type * as apartments from "../apartments.js";
 import type * as auth from "../auth.js";
+import type * as documents from "../documents.js";
 import type * as emails from "../emails.js";
 import type * as invoices from "../invoices.js";
 import type * as maintenance from "../maintenance.js";
@@ -28,6 +29,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   apartments: typeof apartments;
   auth: typeof auth;
+  documents: typeof documents;
   emails: typeof emails;
   invoices: typeof invoices;
   maintenance: typeof maintenance;
