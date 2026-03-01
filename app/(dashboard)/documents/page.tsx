@@ -280,7 +280,7 @@ export default function DocumentsPage() {
           throw new Error("Failed to get storage ID");
         }
         
-        newFileId = storageId;
+        newFileId = storageId as unknown as Id<"_storage">;
       }
 
       await updateDocument({
