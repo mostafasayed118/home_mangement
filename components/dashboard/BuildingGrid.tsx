@@ -13,7 +13,7 @@ interface Apartment {
   floor: number;
   unitNumber: string;
   unitLabel: string;
-  status: "occupied" | "vacant" | "maintenance";
+  status: "occupied" | "vacant" | "maintenance" | "reserved";
   rentAmount: number;
 }
 
@@ -42,9 +42,10 @@ export function BuildingGrid({ apartments, payments }: BuildingGridProps) {
   };
 
   const getStatusColor = (apartmentStatus: string, paymentStatus: string) => {
-    // If apartment is vacant or in maintenance, show that status
+    // If apartment is vacant, in maintenance, or reserved, show that status
     if (apartmentStatus === "vacant") return "bg-gray-400";
     if (apartmentStatus === "maintenance") return "bg-blue-500";
+    if (apartmentStatus === "reserved") return "bg-orange-500";
 
     // If occupied, show payment status
     switch (paymentStatus) {
@@ -65,6 +66,7 @@ export function BuildingGrid({ apartments, payments }: BuildingGridProps) {
     // First check apartment status
     if (apartmentStatus === "vacant") return getApartmentStatusArabic("vacant");
     if (apartmentStatus === "maintenance") return getApartmentStatusArabic("maintenance");
+    if (apartmentStatus === "reserved") return getApartmentStatusArabic("reserved");
 
     // Then check payment status for occupied apartments
     return getPaymentStatusArabic(paymentStatus);
@@ -133,7 +135,7 @@ export function BuildingGrid({ apartments, payments }: BuildingGridProps) {
       {/* Legend */}
       <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-700">
         <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 sm:mb-3">{translations.legend}</p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2 sm:gap-4">
           <div className="flex items-center gap-1.5 sm:gap-2">
             <div className="h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-green-500" />
             <span className="text-xs text-gray-600 dark:text-gray-300">{translations.paid}</span>
@@ -157,6 +159,10 @@ export function BuildingGrid({ apartments, payments }: BuildingGridProps) {
           <div className="flex items-center gap-1.5 sm:gap-2">
             <div className="h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-blue-500" />
             <span className="text-xs text-gray-600 dark:text-gray-300">{translations.maintenanceStatus}</span>
+          </div>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-orange-500" />
+            <span className="text-xs text-gray-600 dark:text-gray-300">{translations.reserved}</span>
           </div>
         </div>
       </div>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Building2,
@@ -12,8 +12,13 @@ import {
   FileText,
   Menu,
   X,
+  LogOut,
+  User,
+  BarChart,
 } from "lucide-react";
 import { translations } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth-context";
+import { Button } from "@/components/ui/button";
 
 const navigation = [
   { name: translations.dashboard, href: "/", icon: LayoutDashboard },
@@ -22,14 +27,22 @@ const navigation = [
   { name: translations.payments, href: "/payments", icon: CreditCard },
   { name: translations.invoices, href: "/invoices", icon: FileText },
   { name: translations.maintenanceNav, href: "/maintenance", icon: Wrench },
+  { name: translations.summaries, href: "/summaries", icon: BarChart },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user, signOut, isAuthenticated } = useAuth();
 
   const handleNavClick = () => {
     setIsMobileMenuOpen(false);
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push("/sign-in");
   };
 
   return (
@@ -89,6 +102,34 @@ export function Sidebar() {
             );
           })}
         </nav>
+
+        {/* User Section */}
+        {isAuthenticated && user && (
+          <div className="border-t border-gray-800 dark:border-gray-700 p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="flex items-center justify-center h-8 w-8 rounded-full bg-gray-700">
+                <User className="h-4 w-4 text-gray-300" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate">
+                  {user.name || "Admin"}
+                </p>
+                <p className="text-xs text-gray-400 truncate">
+                  {user.email}
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSignOut}
+              className="w-full justify-start text-gray-400 hover:text-white hover:bg-gray-800"
+            >
+              <LogOut className="h-4 w-4 ml-2" />
+              Sign Out
+            </Button>
+          </div>
+        )}
       </div>
     </>
   );

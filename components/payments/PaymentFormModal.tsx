@@ -23,6 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useToast } from "@/lib/toast";
 
 interface PaymentFormModalProps {
   open: boolean;
@@ -51,6 +52,14 @@ interface Tenant {
   } | null;
 }
 
+// Extended tenant type for display
+interface EnrichedTenant extends Tenant {
+  apartment?: {
+    unitLabel: string;
+    rentAmount: number;
+  } | null;
+}
+
 export function PaymentFormModal({
   open,
   onOpenChange,
@@ -60,6 +69,7 @@ export function PaymentFormModal({
   const apartments = useQuery(api.apartments.getAll);
   const addPayment = useMutation(api.payments.addPayment);
   const updatePayment = useMutation(api.payments.updatePayment);
+  const { addToast } = useToast();
 
   const [tenantId, setTenantId] = useState<string>("");
   const [amount, setAmount] = useState(0);
@@ -75,8 +85,11 @@ export function PaymentFormModal({
   const isEdit = !!payment;
 
   // Get selected tenant's apartment info
+  // For editing: use the payment's apartmentId directly (tenant might be inactive)
+  // For new payments: look up through the selected tenant
   const selectedTenant = tenants?.find((t: Tenant) => t._id === tenantId);
-  const tenantApartment = apartments?.find(a => a._id === selectedTenant?.apartmentId);
+  const apartmentId = isEdit ? payment?.apartmentId : selectedTenant?.apartmentId;
+  const tenantApartment = apartments?.find(a => a._id === apartmentId);
 
   useEffect(() => {
     if (payment) {
@@ -109,12 +122,16 @@ export function PaymentFormModal({
     setIsLoading(true);
 
     try {
-      const currentTenant = tenants?.find((t: Tenant) => t._id === tenantId);
-      
-      if (!currentTenant) {
-        setError("الرجاء اختيار المستأجر");
-        setIsLoading(false);
-        return;
+      // For new payments, validate tenant selection
+      // For edits, tenantId is already set from the payment
+      if (!isEdit) {
+        const currentTenant = tenants?.find((t: Tenant) => t._id === tenantId);
+        
+        if (!currentTenant) {
+          setError("الرجاء اختيار المستأجر");
+          setIsLoading(false);
+          return;
+        }
       }
 
       // Validate amount - must be strictly greater than 0
@@ -136,6 +153,18 @@ export function PaymentFormModal({
       // FIX: Use undefined instead of 0 for null paymentDate
       const paymentDateValue = paymentDate ? new Date(paymentDate).getTime() : undefined;
 
+      // Validate payment date is not in the future for new payments (allow same-day payments)
+      // Allow any date for edits to enable data corrections
+      if (!isEdit && paymentDateValue) {
+        const paymentDateOnly = new Date(paymentDateValue).setHours(0, 0, 0, 0);
+        const todayOnly = new Date().setHours(0, 0, 0, 0);
+        if (paymentDateOnly > todayOnly) {
+          setError("لا يمكن أن يكون تاريخ الدفع في المستقبل");
+          setIsLoading(false);
+          return;
+        }
+      }
+
       if (isEdit) {
         await updatePayment({
           id: payment._id,
@@ -147,7 +176,16 @@ export function PaymentFormModal({
           month,
           year,
         });
+        addToast("تم تحديث الدفعة بنجاح", "success");
       } else {
+        const currentTenant = tenants?.find((t: Tenant) => t._id === tenantId);
+        
+        if (!currentTenant) {
+          setError("الرجاء اختيار المستأجر");
+          setIsLoading(false);
+          return;
+        }
+        
         await addPayment({
           tenantId: tenantId as Id<"tenants">,
           apartmentId: currentTenant.apartmentId,
@@ -159,22 +197,24 @@ export function PaymentFormModal({
           month,
           year,
         });
+        addToast("تم إضافة الدفعة بنجاح", "success");
       }
 
       onOpenChange(false);
     } catch (error) {
       console.error("Error saving payment:", error);
       setError("حدث خطأ أثناء حفظ الدفعة");
+      addToast("حدث خطأ أثناء حفظ الدفعة", "error");
     } finally {
       setIsLoading(false);
     }
   };
 
   const statusOptions = [
-    { value: "pending", label: "معلق" },
+    { value: "pending", label: "قيد الانتظار" },
     { value: "paid", label: "مدفوع" },
     { value: "late", label: "متأخر" },
-    { value: "partial", label: "جزئي" },
+    { value: "partial", label: "دفع جزئي" },
   ];
 
   const months = [
@@ -224,9 +264,9 @@ export function PaymentFormModal({
                     <SelectValue placeholder="اختر المستأجر" />
                   </SelectTrigger>
                   <SelectContent>
-                    {tenants?.map((tenant: Tenant) => (
+                    {tenants?.map((tenant: EnrichedTenant) => (
                       <SelectItem key={tenant._id} value={tenant._id}>
-                        {tenant.name} - {(tenant as any).apartment?.unitLabel}
+                        {tenant.name} - {tenant.apartment?.unitLabel}
                       </SelectItem>
                     ))}
                   </SelectContent>

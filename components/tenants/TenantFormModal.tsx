@@ -209,7 +209,7 @@ export function TenantFormModal({
               </div>
             )}
 
-            {/* Apartment selection - now visible in both Create and Edit modes */}
+            {/* Apartment selection - available in both create and edit modes */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="apartment" className="text-start">
                 الشقة
@@ -219,7 +219,7 @@ export function TenantFormModal({
                 onValueChange={setApartmentId}
               >
                 <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="اختر الشقة" />
+                  <SelectValue placeholder={isEdit ? "الشقة الحالية" : "اختر الشقة"} />
                 </SelectTrigger>
                 <SelectContent>
                   {availableApartments.map((apt: Apartment) => (

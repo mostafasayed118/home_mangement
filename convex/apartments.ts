@@ -50,7 +50,7 @@ export const getByFloor = query({
  * Get apartments by status
  */
 export const getByStatus = query({
-  args: { status: v.union(v.literal("occupied"), v.literal("vacant"), v.literal("maintenance")) },
+  args: { status: v.union(v.literal("occupied"), v.literal("vacant"), v.literal("maintenance"), v.literal("reserved")) },
   handler: async (ctx, args) => {
     return await ctx.db
       .query("apartments")
@@ -67,13 +67,27 @@ export const addApartment = mutation({
     floor: v.number(),
     unitNumber: v.string(),
     unitLabel: v.string(),
-    status: v.union(v.literal("occupied"), v.literal("vacant"), v.literal("maintenance")),
+    status: v.union(v.literal("occupied"), v.literal("vacant"), v.literal("maintenance"), v.literal("reserved")),
     rentAmount: v.number(),
   },
   handler: async (ctx, args) => {
+    // Normalize unitLabel to uppercase for consistency and case-insensitive duplicate check
+    const normalizedUnitLabel = args.unitLabel.trim().toUpperCase();
+    
+    // Check if apartment with same unitLabel already exists (case-insensitive)
+    const existingApartment = await ctx.db
+      .query("apartments")
+      .withIndex("by_unitLabel", (q) => q.eq("unitLabel", normalizedUnitLabel))
+      .first();
+
+    if (existingApartment) {
+      throw new Error(`An apartment with unit label "${args.unitLabel}" already exists`);
+    }
+
     const now = Date.now();
     const id = await ctx.db.insert("apartments", {
       ...args,
+      unitLabel: normalizedUnitLabel, // Store normalized format
       createdAt: now,
       updatedAt: now,
     });
@@ -87,7 +101,7 @@ export const addApartment = mutation({
 export const updateStatus = mutation({
   args: {
     id: v.id("apartments"),
-    status: v.union(v.literal("occupied"), v.literal("vacant"), v.literal("maintenance")),
+    status: v.union(v.literal("occupied"), v.literal("vacant"), v.literal("maintenance"), v.literal("reserved")),
   },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.id, {
@@ -122,7 +136,7 @@ export const updateApartment = mutation({
     floor: v.optional(v.number()),
     unitNumber: v.optional(v.string()),
     unitLabel: v.optional(v.string()),
-    status: v.optional(v.union(v.literal("occupied"), v.literal("vacant"), v.literal("maintenance"))),
+    status: v.optional(v.union(v.literal("occupied"), v.literal("vacant"), v.literal("maintenance"), v.literal("reserved"))),
     rentAmount: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
@@ -166,6 +180,7 @@ export const getStats = query({
     const occupied = apartments.filter(a => a.status === "occupied").length;
     const vacant = apartments.filter(a => a.status === "vacant").length;
     const maintenance = apartments.filter(a => a.status === "maintenance").length;
+    const reserved = apartments.filter(a => a.status === "reserved").length;
     
     const totalMonthlyRent = apartments.reduce((sum, a) => sum + a.rentAmount, 0);
     const occupiedRent = apartments
@@ -177,6 +192,7 @@ export const getStats = query({
       occupied,
       vacant,
       maintenance,
+      reserved,
       occupancyRate: total > 0 ? (occupied / total) * 100 : 0,
       totalMonthlyRent,
       occupiedRent,

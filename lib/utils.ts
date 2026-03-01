@@ -13,12 +13,12 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Format currency to USD
+ * Format currency to EGP (Egyptian Pound)
  */
 export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("ar-EG", {
     style: "currency",
-    currency: "USD",
+    currency: "EGP",
   }).format(amount);
 }
 
@@ -113,6 +113,8 @@ export function getApartmentStatusColor(status: string): string {
       return "bg-gray-500";
     case "maintenance":
       return "bg-blue-500";
+    case "reserved":
+      return "bg-orange-500";
     default:
       return "bg-gray-500";
   }

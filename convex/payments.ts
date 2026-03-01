@@ -231,6 +231,30 @@ export const addPayment = mutation({
     year: v.number(),
   },
   handler: async (ctx, args) => {
+    // Check for existing payment (same tenant, month, year) - block both paid AND pending
+    // Allow partial payments (can have multiple partials for same period)
+    const existingPayment = await ctx.db
+      .query("payments")
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("tenantId"), args.tenantId),
+          q.eq(q.field("month"), args.month),
+          q.eq(q.field("year"), args.year),
+          q.or(
+            q.eq(q.field("status"), "paid"),
+            q.eq(q.field("status"), "pending")
+          )
+        )
+      )
+      .first();
+
+    if (existingPayment) {
+      const statusLabel = existingPayment.status === "paid" ? "مدفوع" : "معلق";
+      throw new Error(
+        `A ${existingPayment.status} payment (${statusLabel}) already exists for this tenant in ${args.month}/${args.year}`
+      );
+    }
+
     const now = Date.now();
     const id = await ctx.db.insert("payments", {
       ...args,

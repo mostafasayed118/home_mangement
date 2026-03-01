@@ -5,6 +5,7 @@ import { ConvexProvider } from "convex/react";
 import { ConvexReactClient } from "convex/react";
 import { ToastProvider } from "@/lib/toast";
 import { ThemeProvider } from "@/components/theme-provider";
+import { AuthProvider } from "@/lib/auth-context";
 
 const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -17,9 +18,11 @@ export function ConvexClientProvider({ children }: { children: ReactNode }) {
         forcedTheme="dark"
         disableTransitionOnChange
       >
-        <ToastProvider>
-          {children}
-        </ToastProvider>
+        <AuthProvider>
+          <ToastProvider>
+            {children}
+          </ToastProvider>
+        </AuthProvider>
       </ThemeProvider>
     </ConvexProvider>
   );

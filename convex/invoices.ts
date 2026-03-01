@@ -145,6 +145,12 @@ export const createInvoice = mutation({
     description: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Verify that the apartment exists
+    const apartment = await ctx.db.get(args.apartmentId);
+    if (!apartment) {
+      throw new Error("Apartment not found");
+    }
+    
     const now = Date.now();
     const id = await ctx.db.insert("invoices", {
       ...args,

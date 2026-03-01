@@ -230,3 +230,22 @@ For issues or questions, refer to:
 - [Next.js Documentation](https://nextjs.org/docs)
 - [Convex Documentation](https://docs.convex.dev)
 - [Clerk Documentation](https://clerk.com/docs)
+
+---
+
+## Currency Migration Note (v2.0.0+)
+
+**Important:** Starting from version 2.0.0, the application uses Egyptian Pound (EGP) as the default currency instead of US Dollar (USD).
+
+### Changes Made
+- [`lib/utils.ts:17`](lib/utils.ts): `formatCurrency()` now formats amounts as EGP using `ar-EG` locale
+
+### Impact on Existing Data
+- Existing rent amounts in the database are stored as raw numbers without currency metadata
+- All amounts will now display as EGP regardless of their original intended currency
+- **If you have existing data**: You may need to either:
+  1. Leave amounts as-is (if they represent EGP values)
+  2. Run a data migration to convert USD amounts to EGP (multiply by current exchange rate ~50-55 EGP/USD)
+
+### Seed Data
+The seed script now uses EGP values (e.g., apartment rents are in the range of 15,000-25,000 EGP).

@@ -33,7 +33,7 @@ interface ApartmentFormModalProps {
     floor: number;
     unitNumber: string;
     unitLabel: string;
-    status: "occupied" | "vacant" | "maintenance";
+    status: "occupied" | "vacant" | "maintenance" | "reserved";
     rentAmount: number;
   } | null;
 }
@@ -50,7 +50,7 @@ export function ApartmentFormModal({
   const [floor, setFloor] = useState(apartment?.floor ?? 1);
   const [unitNumber, setUnitNumber] = useState(apartment?.unitNumber ?? "");
   const [status, setStatus] = useState<
-    "occupied" | "vacant" | "maintenance"
+    "occupied" | "vacant" | "maintenance" | "reserved"
   >(apartment?.status ?? "vacant");
   const [rentAmount, setRentAmount] = useState(apartment?.rentAmount ?? 0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -180,7 +180,7 @@ export function ApartmentFormModal({
               </Label>
               <Select
                 value={status}
-                onValueChange={(value: "occupied" | "vacant" | "maintenance") =>
+                onValueChange={(value: "occupied" | "vacant" | "maintenance" | "reserved") =>
                   setStatus(value)
                 }
               >
@@ -191,6 +191,7 @@ export function ApartmentFormModal({
                   <SelectItem value="vacant">شاغرة</SelectItem>
                   <SelectItem value="occupied">مؤجرة</SelectItem>
                   <SelectItem value="maintenance">صيانة</SelectItem>
+                  <SelectItem value="reserved">محجوزة</SelectItem>
                 </SelectContent>
               </Select>
             </div>

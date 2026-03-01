@@ -11,6 +11,7 @@ export const translations = {
   payments: "الدفعات",
   invoices: "الفواتير",
   maintenanceNav: "الصيانة",
+  summaries: "ملخصات الشهور",
   buildingManager: "مدير المباني",
 
   // KPI Cards
@@ -49,6 +50,7 @@ export const translations = {
   partial: "دفع جزئي",
   vacant: "شاغرة",
   maintenanceStatus: "صيانة",
+  reserved: "محجوزة",
 
   // Status
   occupied: "مأجور",
@@ -58,6 +60,26 @@ export const translations = {
 
   // Overview
   overviewTitle: "نظرة عامة على أداء المبنى هذا الشهر",
+
+  // Monthly Summaries
+  addNewSummary: "إضافة ملخص جديد",
+  month: "الشهر",
+  year: "السنة",
+  totalIncome: "إجمالي الدخل",
+  totalExpenses: "إجمالي المصروفات",
+  netProfit: "صافي الربح",
+  notes: "ملاحظات",
+  save: "حفظ",
+  cancel: "إلغاء",
+  edit: "تعديل",
+  delete: "حذف",
+  noSummaries: "لا توجد ملخصات شهرية",
+  selectMonth: "اختر الشهر",
+  enterIncome: "أدخل إجمالي الدخل",
+  enterExpenses: "أدخل إجمالي المصروفات",
+  enterNotes: "أدخل ملاحظات (اختياري)",
+  summarySaved: "تم حفظ الملخص بنجاح",
+  summaryDeleted: "تم حذف الملخص بنجاح",
 };
 
 // Apartment Status Translations (mapped from English DB values to Arabic)
@@ -65,6 +87,7 @@ export const apartmentStatusTranslations: Record<string, string> = {
   occupied: "مأجورة",
   vacant: "شاغرة",
   maintenance: "صيانة",
+  reserved: "محجوزة",
 };
 
 // Payment Status Translations (mapped from English DB values to Arabic)

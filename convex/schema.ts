@@ -2,6 +2,43 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
+  // Users table - stores admin user accounts
+  users: defineTable({
+    email: v.string(),
+    passwordHash: v.string(),
+    passwordSalt: v.optional(v.string()), // PBKDF2 salt for secure password hashing
+    name: v.optional(v.string()),
+    emailVerified: v.boolean(),
+    role: v.literal("admin"),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_email", ["email"]),
+
+  // Auth tokens table - stores session tokens
+  authTokens: defineTable({
+    userId: v.id("users"),
+    token: v.string(),
+    expiresAt: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_token", ["token"]),
+
+  // Verification tokens table - for email verification and password reset
+  verificationTokens: defineTable({
+    userId: v.id("users"),
+    token: v.string(),
+    type: v.union(
+      v.literal("email_verification"),
+      v.literal("password_reset")
+    ),
+    expiresAt: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_token", ["token"]),
+
   // Apartments table - stores all units in the building
   apartments: defineTable({
     floor: v.number(),           // 1-6
@@ -10,7 +47,8 @@ export default defineSchema({
     status: v.union(
       v.literal("occupied"),
       v.literal("vacant"),
-      v.literal("maintenance")
+      v.literal("maintenance"),
+      v.literal("reserved")      // Reserved for pending tenants
     ),
     rentAmount: v.number(),      // Monthly rent (variable per apartment)
     createdAt: v.number(),
@@ -30,12 +68,28 @@ export default defineSchema({
     leaseStartDate: v.number(),  // Timestamp
     leaseEndDate: v.number(),    // Timestamp
     isActive: v.boolean(),
+    status: v.optional(v.union(
+      v.literal("active"),
+      v.literal("inactive"),
+      v.literal("pending")
+    )),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_apartmentId", ["apartmentId"])
     .index("by_isActive", ["isActive"])
-    .index("by_leaseEndDate", ["leaseEndDate"]),
+    .index("by_status", ["status"])
+    .index("by_leaseEndDate", ["leaseEndDate"])
+    .index("by_nationalId", ["nationalId"])
+    .searchIndex("search_by_name", {
+      searchField: "name",
+    })
+    .searchIndex("search_by_phone", {
+      searchField: "phone",
+    })
+    .searchIndex("search_by_nationalId", {
+      searchField: "nationalId",
+    }),
 
   // Payments table - tracks rent payments
   payments: defineTable({
@@ -100,4 +154,17 @@ export default defineSchema({
     .index("by_status", ["status"])
     .index("by_date", ["date"])
     .index("by_type", ["type"]),
+
+  // Monthly Summaries table - stores monthly financial snapshots
+  monthlySummaries: defineTable({
+    month: v.number(),         // 1-12
+    year: v.number(),
+    totalIncome: v.number(),   // Total collected rent for that month
+    totalExpenses: v.number(), // Total maintenance/other costs for that month
+    netProfit: v.number(),     // Income - Expenses
+    notes: v.optional(v.string()), // Admin's text notes
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_month_year", ["month", "year"]),
 });
