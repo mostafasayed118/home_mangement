@@ -246,7 +246,7 @@ export default function DocumentsPage() {
 
     setIsUpdating(true);
     try {
-      let newFileId: string | undefined = undefined;
+      let newFileId: Id<"_storage"> | undefined = undefined;
       
       // Upload new file if selected
       if (editSelectedFile) {
@@ -280,7 +280,7 @@ export default function DocumentsPage() {
           throw new Error("Failed to get storage ID");
         }
         
-        newFileId = storageId as unknown as Id<"_storage">;
+        newFileId = storageId as Id<"_storage">;
       }
 
       await updateDocument({
