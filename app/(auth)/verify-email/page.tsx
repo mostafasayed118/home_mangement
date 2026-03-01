@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/lib/toast";
 import { Loader2, CheckCircle, XCircle, Mail } from "lucide-react";
 
-export default function VerifyEmailPage() {
+function VerifyEmailForm() {
   const [isVerifying, setIsVerifying] = useState(true);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -250,5 +250,24 @@ export default function VerifyEmailPage() {
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600" />
+            <p className="mt-4 text-gray-600 dark:text-gray-400">
+              Loading...
+            </p>
+          </div>
+        </div>
+      }
+    >
+      <VerifyEmailForm />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/lib/toast";
 import { Loader2, Mail, Lock, Eye, EyeOff } from "lucide-react";
 
-export default function SignInPage() {
+function SignInForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -204,5 +204,24 @@ export default function SignInPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600" />
+            <p className="mt-4 text-gray-600 dark:text-gray-400">
+              جاري التحميل...
+            </p>
+          </div>
+        </div>
+      }
+    >
+      <SignInForm />
+    </Suspense>
   );
 }
