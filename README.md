@@ -20,11 +20,15 @@ auth flows and admin-only data handlers.
 | `CONVEX_SITE_URL` | Convex deployment env | site URL for HTTP routes |
 
 ⚠️ **Known hardening items** (from the 2026 security audit): the legacy
-`auth.getUserForAuth` / `createUserWithHash` / `storeSession` /
-`storeVerificationToken` handlers are still exported with **zero callers** —
-`getUserForAuth` returns `passwordHash` + `passwordSalt` for any email and is
-live on the production deployment. The `emails.sendWelcomeEmail` /
-`sendPaymentReminder` actions are public (spam vectors). Remove or guard them.
+`auth.createUserWithHash` / `storeSession` / `storeVerificationToken` handlers
+were removed — they were exported with **zero callers** and could forge accounts
+and sessions. `auth.getUserForAuth` remains **public by design**: the
+`/api/auth/signin` and `/api/auth/validate` routes need the stored
+`passwordHash`/`passwordSalt` to run bcrypt comparison — but it means the
+hashes are readable by anyone who knows an email; consider moving password
+verification into a Convex action so hashes never leave the backend. The
+`emails.sendWelcomeEmail` / `sendPaymentReminder` actions are public (spam
+vectors). Remove or guard them.
 
 ## Getting Started
 

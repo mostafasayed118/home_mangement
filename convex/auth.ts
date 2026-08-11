@@ -78,72 +78,6 @@ export const getMySession = query({
   },
 });
 
-// Legacy Get session from token (for fallback only if needed)
-export const getSession = query({
-  args: { token: v.string() },
-  handler: async (ctx, args) => {
-    if (!args.token) {
-      return null;
-    }
-
-    const authToken = await ctx.db
-      .query("authTokens")
-      .withIndex("by_token", (q: any) => q.eq("token", args.token))
-      .first();
-
-    if (!authToken || authToken.expiresAt < Date.now()) {
-      return null;
-    }
-
-    const user = await ctx.db.get(authToken.userId);
-    if (!user) {
-      return null;
-    }
-
-    return {
-      user: {
-        _id: user._id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        emailVerified: user.emailVerified,
-      },
-      expiresAt: authToken.expiresAt,
-    };
-  },
-});
-
-// Get verification token info (Query - no Node.js needed)
-// Returns standardized object pattern: { success: boolean, data?: any, error?: string }
-export const getVerificationTokenInfo = query({
-  args: { token: v.string() },
-  handler: async (ctx, args) => {
-    const verificationToken = await ctx.db
-      .query("verificationTokens")
-      .withIndex("by_token", (q) => q.eq("token", args.token))
-      .first();
-
-    if (!verificationToken) {
-      return { success: false, error: "Token not found" };
-    }
-
-    const user = await ctx.db.get(verificationToken.userId);
-    if (!user) {
-      return { success: false, error: "User not found" };
-    }
-
-    return {
-      success: true,
-      data: {
-        email: user.email,
-        type: verificationToken.type,
-        expiresAt: verificationToken.expiresAt,
-        isExpired: verificationToken.expiresAt < Date.now(),
-      },
-    };
-  },
-});
-
 // Validate reset token (Query - no Node.js needed)
 // Returns standardized object pattern: { success: boolean, data?: any, error?: string }
 export const validateResetToken = query({
@@ -218,75 +152,6 @@ export const signUp = mutation({
       userId,
       verificationToken,
       email: args.email.toLowerCase(),
-    };
-  },
-});
-
-// Sign in - Create session for authenticated user
-// NOTE: Authentication is done in the API route before calling this mutation
-export const signIn = mutation({
-  args: {
-    email: v.string(),
-  },
-  handler: async (ctx, args) => {
-    // Find user by email
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_email", (q: any) => q.eq("email", args.email.toLowerCase()))
-      .first();
-
-    if (!user) {
-      throw new Error("User not found");
-    }
-
-    // Check if email is verified
-    if (!user.emailVerified) {
-      // Generate new verification token
-      const verificationToken = generateToken();
-      const now = Date.now();
-
-      // Delete any existing verification tokens for this user
-      const existingTokens = await ctx.db
-        .query("verificationTokens")
-        .withIndex("by_userId", (q) => q.eq("userId", user._id))
-        .filter((q) => q.eq(q.field("type"), "email_verification"))
-        .collect();
-
-      for (const token of existingTokens) {
-        await ctx.db.delete(token._id);
-      }
-
-      await ctx.db.insert("verificationTokens", {
-        userId: user._id,
-        token: verificationToken,
-        type: "email_verification",
-        expiresAt: now + EMAIL_VERIFICATION_EXPIRY,
-        createdAt: now,
-      });
-
-      throw new Error("EMAIL_NOT_VERIFIED");
-    }
-
-    // Create session token
-    const sessionToken = generateToken();
-    const now = Date.now();
-
-    await ctx.db.insert("authTokens", {
-      userId: user._id,
-      token: sessionToken,
-      expiresAt: now + SESSION_TOKEN_EXPIRY,
-      createdAt: now,
-    });
-
-    return {
-      token: sessionToken,
-      user: {
-        _id: user._id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        emailVerified: user.emailVerified,
-      },
     };
   },
 });
@@ -515,41 +380,6 @@ export const resendVerificationEmail = mutation({
   },
 });
 
-// Create user directly with hashed password (for internal use)
-export const createUserWithHash = mutation({
-  args: {
-    email: v.string(),
-    passwordHash: v.string(),
-    passwordSalt: v.string(),
-    name: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
-    const existingUser = await ctx.db
-      .query("users")
-      .withIndex("by_email", (q: any) => q.eq("email", args.email.toLowerCase()))
-      .first();
-
-    if (existingUser) {
-      throw new Error("User with this email already exists");
-    }
-
-    const now = Date.now();
-
-    const userId = await ctx.db.insert("users", {
-      email: args.email.toLowerCase(),
-      passwordHash: args.passwordHash,
-      passwordSalt: args.passwordSalt,
-      name: args.name,
-      emailVerified: false,
-      role: "admin",
-      createdAt: now,
-      updatedAt: now,
-    });
-
-    return userId;
-  },
-});
-
 // Get user for password validation
 export const getUserForAuth = query({
   args: { email: v.string() },
@@ -575,57 +405,4 @@ export const getUserForAuth = query({
   },
 });
 
-// Store session token (for API route use)
-export const storeSession = mutation({
-  args: {
-    userId: v.id("users"),
-    token: v.string(),
-    expiresAt: v.number(),
-  },
-  handler: async (ctx, args) => {
-    const now = Date.now();
-    await ctx.db.insert("authTokens", {
-      userId: args.userId,
-      token: args.token,
-      expiresAt: args.expiresAt,
-      createdAt: now,
-    });
-    return { success: true };
-  },
-});
 
-// Store verification token (for API route use)
-export const storeVerificationToken = mutation({
-  args: {
-    userId: v.id("users"),
-    token: v.string(),
-    type: v.union(
-      v.literal("email_verification"),
-      v.literal("password_reset")
-    ),
-    expiresAt: v.number(),
-  },
-  handler: async (ctx, args) => {
-    const now = Date.now();
-
-    // Delete existing tokens of the same type for this user
-    const existingTokens = await ctx.db
-      .query("verificationTokens")
-      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
-      .filter((q) => q.eq(q.field("type"), args.type))
-      .collect();
-
-    for (const token of existingTokens) {
-      await ctx.db.delete(token._id);
-    }
-
-    await ctx.db.insert("verificationTokens", {
-      userId: args.userId,
-      token: args.token,
-      type: args.type,
-      expiresAt: args.expiresAt,
-      createdAt: now,
-    });
-    return { success: true };
-  },
-});
