@@ -34,7 +34,23 @@ function ResetPasswordForm() {
   );
 
   useEffect(() => {
-    if (tokenValidation && !tokenValidation.valid) {
+    // Handle loading state - don't show any error while still loading
+    if (tokenValidation === undefined) {
+      return;
+    }
+    
+    // Handle API error (success === false)
+    if (!tokenValidation?.success) {
+      toast({
+        title: "Error",
+        description: tokenValidation?.error || "Failed to validate reset link",
+        variant: "error",
+      });
+      return;
+    }
+    
+    // Handle valid but expired/invalid token
+    if (tokenValidation?.data && !tokenValidation.data.valid) {
       toast({
         title: "Invalid Link",
         description: tokenValidation.error || "This password reset link is invalid or has expired",
@@ -156,8 +172,11 @@ function ResetPasswordForm() {
     );
   }
 
-  // Token invalid
-  if (!tokenValidation.valid) {
+  // Show expired/invalid link UI for any of these conditions:
+  // - API call failed (!success)
+  // - No data returned
+  // - Token is invalid
+  if (!tokenValidation || !tokenValidation.success || !tokenValidation.data?.valid) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8">
         <div className="text-center">

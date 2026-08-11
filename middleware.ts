@@ -1,35 +1,81 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { verifyToken, validateProductionJwtSecret } from "./lib/jwt";
 
 // Public routes that don't require authentication
-const publicRoutes = ['/sign-in', '/sign-up', '/verify'];
+// Include all auth pages, API routes, static files, etc.
+const publicRoutes = [
+  '/sign-in',
+  '/sign-up', 
+  '/verify-email',
+  '/reset-password',
+  '/forgot-password',
+];
+
+// Routes that start with these prefixes are always public
+const publicPrefixes = [
+  '/api/',
+  '/_next/',
+  '/favicon.ico',
+  '/public/',
+];
+
+// Check if a path is a public route
+function isPublicPath(pathname: string): boolean {
+  // Check exact matches
+  if (publicRoutes.some(route => pathname === route || pathname.startsWith(route + '/'))) {
+    return true;
+  }
+  
+  // Check prefix matches
+  if (publicPrefixes.some(prefix => pathname.startsWith(prefix))) {
+    return true;
+  }
+  
+  return false;
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-
-  // Get the auth token from cookies - simple existence check only
+  
+  // Get the auth token from cookies
   const token = request.cookies.get("auth_token")?.value;
-
-  // Check if the current path is a public route
-  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
-
-  // Scenario 1: User is on a public auth route (sign-in, sign-up, verify)
-  // and already has a valid token → redirect to dashboard
-  if (isPublicRoute && token) {
-    return NextResponse.redirect(new URL("/", request.url));
+  
+  // Check if this is a public path
+  const isPublic = isPublicPath(pathname);
+  
+  // If it's a public path, allow access without checking auth
+  if (isPublic) {
+    // Special case: If authenticated user visits sign-in, redirect to dashboard
+    if (pathname === '/sign-in' && token) {
+      const payload = await verifyToken(token);
+      if (payload) {
+        return NextResponse.redirect(new URL("/", request.url));
+      }
+    }
+    return NextResponse.next();
   }
-
-  // Scenario 2: User is on a protected route (dashboard, apartments, etc.)
-  // and does NOT have a token → redirect to sign-in
-  if (!isPublicRoute && !token) {
+  
+  // For protected routes: check if user has a valid token
+  if (!token) {
+    // No token - redirect to sign-in
     const signInUrl = new URL("/sign-in", request.url);
     signInUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(signInUrl);
   }
-
-  // Scenario 3: User is on a public route without token → allow access
-  // Scenario 4: User is on a protected route with token → allow access
   
+  // Token exists - verify it
+  const payload = await verifyToken(token);
+  if (!payload) {
+    // Token is invalid or expired, redirect to sign-in
+    const signInUrl = new URL("/sign-in", request.url);
+    signInUrl.searchParams.set("redirect", pathname);
+    const response = NextResponse.redirect(signInUrl);
+    response.cookies.delete("auth_token");
+    return response;
+  }
+  
+  // Valid token - allow access
   return NextResponse.next();
 }
 
