@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# demo recording artifacts (generated)
+demo-output/
+dev-output.log
+playwright-report/
+test-results/
