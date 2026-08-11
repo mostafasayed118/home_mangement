@@ -1,5 +1,31 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## 🔐 Security Model
+
+Home Management is a **single-admin property-management app** with its own
+email/password auth (no third-party provider). The backend is split into public
+auth flows and admin-only data handlers.
+
+| Claim | Reality |
+|---|---|
+| **Authentication** | ✅ Custom email/password: `signUp`, `signIn`, `verifyEmailToken`, `resetPassword` are public by design; stored passwords are salted hashes. |
+| **Authorization** | ✅ Every data handler (`apartments`, `invoices`, `documents`, `maintenance`, `payments`, `summaries`, `tenants`) calls a local `requireAdmin()` — unauthenticated calls get "Unauthorized: Authentication required". |
+| **Token verification** | ✅ `convex/http.ts` exposes OIDC discovery + JWKS routes (`/api/auth/...`) so the app can verify session JWTs server-side. |
+
+**Required environment variables:**
+
+| Variable | Where | Purpose |
+|---|---|---|
+| `NEXT_PUBLIC_APP_URL` | `.env.local` | app origin (OIDC issuer) |
+| `CONVEX_SITE_URL` | Convex deployment env | site URL for HTTP routes |
+
+⚠️ **Known hardening items** (from the 2026 security audit): the legacy
+`auth.getUserForAuth` / `createUserWithHash` / `storeSession` /
+`storeVerificationToken` handlers are still exported with **zero callers** —
+`getUserForAuth` returns `passwordHash` + `passwordSalt` for any email and is
+live on the production deployment. The `emails.sendWelcomeEmail` /
+`sendPaymentReminder` actions are public (spam vectors). Remove or guard them.
+
 ## Getting Started
 
 First, run the development server:
