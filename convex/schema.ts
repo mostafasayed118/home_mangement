@@ -139,9 +139,12 @@ export default defineSchema({
   // Invoices table - tracks utility bills and other invoices
   invoices: defineTable({
     apartmentId: v.id("apartments"),
+    tenantId: v.optional(v.id("tenants")), // Optional link to tenant for auto-generated invoices
     amount: v.number(),
-    type: v.string(),           // e.g., "Electricity", "Water", "Maintenance"
+    type: v.string(),           // e.g., "Electricity", "Water", "Maintenance", "Rent"
     date: v.number(),           // Timestamp
+    dueDate: v.optional(v.number()), // Due date timestamp
+    month: v.optional(v.string()),   // Month name in Arabic (e.g., "مارس 2026")
     status: v.union(
       v.literal("paid"),
       v.literal("pending")
@@ -152,6 +155,7 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_apartmentId", ["apartmentId"])
+    .index("by_tenantId", ["tenantId"]) // Added for duplicate check
     .index("by_status", ["status"])
     .index("by_date", ["date"])
     .index("by_type", ["type"]),

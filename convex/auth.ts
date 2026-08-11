@@ -57,13 +57,28 @@ async function hashPassword(password: string, salt: string): Promise<string> {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// Compare password with PBKDF2 hash
-async function comparePassword(password: string, hash: string, salt: string): Promise<boolean> {
-  const hashedPassword = await hashPassword(password, salt);
-  return hashedPassword === hash;
-}
+// Get session (Native Convex Auth using JWT)
+export const getMySession = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return null;
 
-// Get session from token (Query - no Node.js needed)
+    // Provide legacy session data structure for compatibility
+    return {
+      user: {
+        _id: identity.subject,
+        email: identity.email,
+        name: identity.name || "",
+        role: "admin", 
+        emailVerified: true,
+      },
+      expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
+    };
+  },
+});
+
+// Legacy Get session from token (for fallback only if needed)
 export const getSession = query({
   args: { token: v.string() },
   handler: async (ctx, args) => {
@@ -73,7 +88,7 @@ export const getSession = query({
 
     const authToken = await ctx.db
       .query("authTokens")
-      .withIndex("by_token", (q) => q.eq("token", args.token))
+      .withIndex("by_token", (q: any) => q.eq("token", args.token))
       .first();
 
     if (!authToken || authToken.expiresAt < Date.now()) {
@@ -99,6 +114,7 @@ export const getSession = query({
 });
 
 // Get verification token info (Query - no Node.js needed)
+// Returns standardized object pattern: { success: boolean, data?: any, error?: string }
 export const getVerificationTokenInfo = query({
   args: { token: v.string() },
   handler: async (ctx, args) => {
@@ -108,24 +124,28 @@ export const getVerificationTokenInfo = query({
       .first();
 
     if (!verificationToken) {
-      return null;
+      return { success: false, error: "Token not found" };
     }
 
     const user = await ctx.db.get(verificationToken.userId);
     if (!user) {
-      return null;
+      return { success: false, error: "User not found" };
     }
 
     return {
-      email: user.email,
-      type: verificationToken.type,
-      expiresAt: verificationToken.expiresAt,
-      isExpired: verificationToken.expiresAt < Date.now(),
+      success: true,
+      data: {
+        email: user.email,
+        type: verificationToken.type,
+        expiresAt: verificationToken.expiresAt,
+        isExpired: verificationToken.expiresAt < Date.now(),
+      },
     };
   },
 });
 
 // Validate reset token (Query - no Node.js needed)
+// Returns standardized object pattern: { success: boolean, data?: any, error?: string }
 export const validateResetToken = query({
   args: { token: v.string() },
   handler: async (ctx, args) => {
@@ -135,14 +155,14 @@ export const validateResetToken = query({
       .first();
 
     if (!verificationToken || verificationToken.type !== "password_reset") {
-      return { valid: false, error: "Invalid reset token" };
+      return { success: false, error: "Invalid reset token" };
     }
 
     if (verificationToken.expiresAt < Date.now()) {
-      return { valid: false, error: "Reset token has expired" };
+      return { success: false, error: "Reset token has expired" };
     }
 
-    return { valid: true };
+    return { success: true, data: { valid: true } };
   },
 });
 
@@ -157,7 +177,7 @@ export const signUp = mutation({
     // Check if user already exists
     const existingUser = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", args.email.toLowerCase()))
+      .withIndex("by_email", (q: any) => q.eq("email", args.email.toLowerCase()))
       .first();
 
     if (existingUser) {
@@ -212,7 +232,7 @@ export const signIn = mutation({
     // Find user by email
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", args.email.toLowerCase()))
+      .withIndex("by_email", (q: any) => q.eq("email", args.email.toLowerCase()))
       .first();
 
     if (!user) {
@@ -352,7 +372,7 @@ export const requestPasswordReset = mutation({
   handler: async (ctx, args) => {
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", args.email.toLowerCase()))
+      .withIndex("by_email", (q: any) => q.eq("email", args.email.toLowerCase()))
       .first();
 
     // Always return success to prevent email enumeration
@@ -452,7 +472,7 @@ export const resendVerificationEmail = mutation({
   handler: async (ctx, args) => {
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", args.email.toLowerCase()))
+      .withIndex("by_email", (q: any) => q.eq("email", args.email.toLowerCase()))
       .first();
 
     if (!user) {
@@ -506,7 +526,7 @@ export const createUserWithHash = mutation({
   handler: async (ctx, args) => {
     const existingUser = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", args.email.toLowerCase()))
+      .withIndex("by_email", (q: any) => q.eq("email", args.email.toLowerCase()))
       .first();
 
     if (existingUser) {
@@ -536,7 +556,7 @@ export const getUserForAuth = query({
   handler: async (ctx, args) => {
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", args.email.toLowerCase()))
+      .withIndex("by_email", (q: any) => q.eq("email", args.email.toLowerCase()))
       .first();
 
     if (!user) {

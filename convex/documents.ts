@@ -2,12 +2,51 @@ import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
 /**
+ * Authorization helper function
+ * Checks if the current user is authenticated and has admin role
+ *
+ * SECURITY: This function ONLY uses server-side authentication context.
+ * It NEVER accepts client-supplied email or user data for authorization.
+ */
+async function requireAdmin(ctx: any): Promise<{ isAdmin: boolean; userId: string }> {
+  // Always use server-side authentication - NEVER trust client-supplied data
+  const identity = await ctx.auth.getUserIdentity();
+
+  if (!identity) {
+    throw new Error("Unauthorized: Authentication required. Please log in.");
+  }
+
+  const userEmail = identity.email;
+
+  if (!userEmail) {
+    throw new Error("Unauthorized: User email not found. Please log in again.");
+  }
+
+  const user = await ctx.db
+    .query("users")
+    .withIndex("by_email", (q: any) => q.eq("email", userEmail))
+    .first();
+
+  if (!user) {
+    throw new Error("Unauthorized: User not found. Please log in again.");
+  }
+
+  if (user.role !== "admin") {
+    throw new Error("Forbidden: Admin privileges required to perform this action.");
+  }
+
+  return { isAdmin: true, userId: user._id };
+}
+
+/**
  * Generate an upload URL for files
  * Returns a URL that can be used to upload a file directly to Convex storage
  */
 export const generateUploadUrl = mutation({
   args: {},
   handler: async (ctx) => {
+    // Authorization check - only admins can upload files
+    await requireAdmin(ctx);
     // Generate upload URL for up to 50MB files
     return await ctx.storage.generateUploadUrl();
   },
@@ -24,6 +63,8 @@ export const saveDocument = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Authorization check - only admins can save documents
+    await requireAdmin(ctx);
     const now = Date.now();
     const documentId = await ctx.db.insert("documents", {
       title: args.title,
@@ -43,6 +84,8 @@ export const saveDocument = mutation({
  */
 export const getDocuments = query({
   handler: async (ctx) => {
+    // Authorization check
+    await requireAdmin(ctx);
     const documents = await ctx.db.query("documents").collect();
     
     // Sort by upload date descending
@@ -71,6 +114,8 @@ export const getDocumentsByType = query({
     type: v.string(),
   },
   handler: async (ctx, args) => {
+    // Authorization check
+    await requireAdmin(ctx);
     const documents = await ctx.db
       .query("documents")
       .withIndex("by_type", (q) => q.eq("type", args.type))
@@ -99,11 +144,8 @@ export const deleteDocument = mutation({
     id: v.id("documents"),
   },
   handler: async (ctx, args) => {
-    // Check authentication
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Unauthorized");
-    }
+    // Authorization check - only admins can delete documents
+    await requireAdmin(ctx);
     
     const document = await ctx.db.get(args.id);
     if (document) {
@@ -123,6 +165,8 @@ export const getDocumentById = query({
     id: v.id("documents"),
   },
   handler: async (ctx, args) => {
+    // Authorization check
+    await requireAdmin(ctx);
     const document = await ctx.db.get(args.id);
     if (document) {
       const url = await ctx.storage.getUrl(document.fileId);
@@ -147,6 +191,8 @@ export const updateDocument = mutation({
     fileId: v.optional(v.id("_storage")),
   },
   handler: async (ctx, args) => {
+    // Authorization check - only admins can update documents
+    await requireAdmin(ctx);
     const { id, ...updates } = args;
     await ctx.db.patch(id, updates);
   },

@@ -2,10 +2,49 @@ import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
 /**
+ * Authorization helper function
+ * Checks if the current user is authenticated and has admin role
+ *
+ * SECURITY: This function ONLY uses server-side authentication context.
+ * It NEVER accepts client-supplied email or user data for authorization.
+ */
+async function requireAdmin(ctx: any): Promise<{ isAdmin: boolean; userId: string }> {
+  // Always use server-side authentication - NEVER trust client-supplied data
+  const identity = await ctx.auth.getUserIdentity();
+
+  if (!identity) {
+    throw new Error("Unauthorized: Authentication required. Please log in.");
+  }
+
+  const userEmail = identity.email;
+
+  if (!userEmail) {
+    throw new Error("Unauthorized: User email not found. Please log in again.");
+  }
+
+  const user = await ctx.db
+    .query("users")
+    .withIndex("by_email", (q: any) => q.eq("email", userEmail))
+    .first();
+
+  if (!user) {
+    throw new Error("Unauthorized: User not found. Please log in again.");
+  }
+
+  if (user.role !== "admin") {
+    throw new Error("Forbidden: Admin privileges required to perform this action.");
+  }
+
+  return { isAdmin: true, userId: user._id };
+}
+
+/**
  * Get all maintenance records
  */
 export const getAll = query({
   handler: async (ctx) => {
+    // Authorization check
+    await requireAdmin(ctx);
     const maintenance = await ctx.db.query("maintenance").collect();
     
     // Enrich with apartment info
@@ -34,6 +73,8 @@ export const getByStatus = query({
     ),
   },
   handler: async (ctx, args) => {
+    // Authorization check
+    await requireAdmin(ctx);
     const maintenance = await ctx.db
       .query("maintenance")
       .withIndex("by_status", (q) => q.eq("status", args.status))
@@ -59,6 +100,8 @@ export const getByStatus = query({
 export const getByApartment = query({
   args: { apartmentId: v.id("apartments") },
   handler: async (ctx, args) => {
+    // Authorization check
+    await requireAdmin(ctx);
     return await ctx.db
       .query("maintenance")
       .withIndex("by_apartmentId", (q) => q.eq("apartmentId", args.apartmentId))
@@ -71,6 +114,8 @@ export const getByApartment = query({
  */
 export const getStats = query({
   handler: async (ctx) => {
+    // Authorization check
+    await requireAdmin(ctx);
     const maintenance = await ctx.db.query("maintenance").collect();
     
     const totalCost = maintenance.reduce((sum, m) => sum + m.cost, 0);
@@ -119,6 +164,8 @@ export const addMaintenanceRecord = mutation({
     description: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Authorization check - only admins can add maintenance records
+    await requireAdmin(ctx);
     const now = Date.now();
     const id = await ctx.db.insert("maintenance", {
       ...args,
@@ -147,6 +194,8 @@ export const updateMaintenance = mutation({
     description: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Authorization check - only admins can update maintenance records
+    await requireAdmin(ctx);
     const { id, ...updates } = args;
     await ctx.db.patch(id, {
       ...updates,
@@ -161,6 +210,8 @@ export const updateMaintenance = mutation({
 export const deleteMaintenance = mutation({
   args: { id: v.id("maintenance") },
   handler: async (ctx, args) => {
+    // Authorization check - only admins can delete maintenance records
+    await requireAdmin(ctx);
     await ctx.db.delete(args.id);
   },
 });
@@ -178,6 +229,8 @@ export const updateStatus = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    // Authorization check - only admins can update maintenance status
+    await requireAdmin(ctx);
     await ctx.db.patch(args.id, {
       status: args.status,
       updatedAt: Date.now(),
@@ -191,6 +244,8 @@ export const updateStatus = mutation({
 export const getYearlyCosts = query({
   args: { year: v.number() },
   handler: async (ctx, args) => {
+    // Authorization check
+    await requireAdmin(ctx);
     const maintenance = await ctx.db.query("maintenance").collect();
     
     const yearlyMaintenance = maintenance.filter((m) => {

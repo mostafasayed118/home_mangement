@@ -10,15 +10,16 @@
 
 import type * as apartments from "../apartments.js";
 import type * as auth from "../auth.js";
+import type * as crons from "../crons.js";
 import type * as documents from "../documents.js";
 import type * as emails from "../emails.js";
+import type * as http from "../http.js";
 import type * as invoices from "../invoices.js";
 import type * as maintenance from "../maintenance.js";
 import type * as payments from "../payments.js";
 import type * as seed from "../seed.js";
 import type * as summaries from "../summaries.js";
 import type * as tenants from "../tenants.js";
-import type * as users from "../users.js";
 
 import type {
   ApiFromModules,
@@ -29,15 +30,16 @@ import type {
 declare const fullApi: ApiFromModules<{
   apartments: typeof apartments;
   auth: typeof auth;
+  crons: typeof crons;
   documents: typeof documents;
   emails: typeof emails;
+  http: typeof http;
   invoices: typeof invoices;
   maintenance: typeof maintenance;
   payments: typeof payments;
   seed: typeof seed;
   summaries: typeof summaries;
   tenants: typeof tenants;
-  users: typeof users;
 }>;
 
 /**

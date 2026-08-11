@@ -2,6 +2,43 @@ import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
 /**
+ * Authorization helper function
+ * Checks if the current user is authenticated and has admin role
+ *
+ * SECURITY: This function ONLY uses server-side authentication context.
+ * It NEVER accepts client-supplied email or user data for authorization.
+ */
+async function requireAdmin(ctx: any): Promise<{ isAdmin: boolean; userId: string }> {
+  // Always use server-side authentication - NEVER trust client-supplied data
+  const identity = await ctx.auth.getUserIdentity();
+
+  if (!identity) {
+    throw new Error("Unauthorized: Authentication required. Please log in.");
+  }
+
+  const userEmail = identity.email;
+
+  if (!userEmail) {
+    throw new Error("Unauthorized: User email not found. Please log in again.");
+  }
+
+  const user = await ctx.db
+    .query("users")
+    .withIndex("by_email", (q: any) => q.eq("email", userEmail))
+    .first();
+
+  if (!user) {
+    throw new Error("Unauthorized: User not found. Please log in again.");
+  }
+
+  if (user.role !== "admin") {
+    throw new Error("Forbidden: Admin privileges required to perform this action.");
+  }
+
+  return { isAdmin: true, userId: user._id };
+}
+
+/**
  * Calculate month preview - sums payments and maintenance for a given month/year
  * This is a read-only preview that doesn't save anything
  */
@@ -11,45 +48,47 @@ export const calculateMonthPreview = query({
     year: v.number(),
   },
   handler: async (ctx, args) => {
+    // Authorization check
+    await requireAdmin(ctx);
     const { month, year } = args;
-    
+
     // Get all payments with status === "paid" for this month/year
     const paidPayments = await ctx.db
       .query("payments")
-      .withIndex("by_month_year", (q) => 
+      .withIndex("by_month_year", (q) =>
         q.eq("month", month).eq("year", year)
       )
       .collect();
-    
-    // Filter only paid payments
-    const paidOnly = paidPayments.filter((p) => p.status === "paid");
-    
-    // Calculate total income from paid payments
-    const totalIncome = paidOnly.reduce((sum, p) => sum + p.amount, 0);
-    
+
+    // Filter only paid and partial payments
+    const paidAndPartial = paidPayments.filter((p) => p.status === "paid" || p.status === "partial");
+
+    // Calculate total income from paid and partial payments
+    const totalIncome = paidAndPartial.reduce((sum, p) => sum + p.amount, 0);
+
     // Get all maintenance records
     const allMaintenance = await ctx.db.query("maintenance").collect();
-    
+
     // Calculate start and end timestamps for the month
     const startOfMonth = new Date(year, month - 1, 1).getTime();
     const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999).getTime();
-    
+
     // Filter maintenance records within the month
-    const monthMaintenance = allMaintenance.filter((m) => 
+    const monthMaintenance = allMaintenance.filter((m) =>
       m.date >= startOfMonth && m.date <= endOfMonth
     );
-    
+
     // Calculate total expenses from maintenance
     const totalExpenses = monthMaintenance.reduce((sum, m) => sum + m.cost, 0);
-    
+
     // Calculate net profit
     const netProfit = totalIncome - totalExpenses;
-    
+
     return {
       totalIncome,
       totalExpenses,
       netProfit,
-      paidPaymentsCount: paidOnly.length,
+      paidPaymentsCount: paidAndPartial.length,
       maintenanceRecordsCount: monthMaintenance.length,
     };
   },
@@ -60,8 +99,10 @@ export const calculateMonthPreview = query({
  */
 export const getSummaries = query({
   handler: async (ctx) => {
+    // Authorization check
+    await requireAdmin(ctx);
     const summaries = await ctx.db.query("monthlySummaries").collect();
-    
+
     // Sort by year descending, then month descending
     const sortedSummaries = summaries.sort((a, b) => {
       if (a.year !== b.year) {
@@ -69,7 +110,7 @@ export const getSummaries = query({
       }
       return b.month - a.month;
     });
-    
+
     return sortedSummaries;
   },
 });
@@ -87,15 +128,17 @@ export const saveSummary = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Authorization check - only admins can save summaries
+    await requireAdmin(ctx);
     const { month, year, totalIncome, totalExpenses, notes } = args;
     const netProfit = totalIncome - totalExpenses;
-    
+
     // Check if a summary for this month/year already exists
     const existingSummary = await ctx.db
       .query("monthlySummaries")
       .withIndex("by_month_year", (q) => q.eq("month", month).eq("year", year))
       .first();
-    
+
     if (existingSummary) {
       // Update existing summary
       await ctx.db.patch(existingSummary._id, {
@@ -132,6 +175,8 @@ export const deleteSummary = mutation({
     id: v.id("monthlySummaries"),
   },
   handler: async (ctx, args) => {
+    // Authorization check - only admins can delete summaries
+    await requireAdmin(ctx);
     await ctx.db.delete(args.id);
   },
 });
@@ -147,9 +192,11 @@ export const updateSummary = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Authorization check - only admins can update summaries
+    await requireAdmin(ctx);
     const { id, totalIncome, totalExpenses, notes } = args;
     const netProfit = totalIncome - totalExpenses;
-    
+
     await ctx.db.patch(id, {
       totalIncome,
       totalExpenses,
@@ -157,7 +204,7 @@ export const updateSummary = mutation({
       notes,
       updatedAt: Date.now(),
     });
-    
+
     return id;
   },
 });
