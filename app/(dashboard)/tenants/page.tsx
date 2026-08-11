@@ -34,7 +34,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { TenantFormModal } from "@/components/tenants/TenantFormModal";
-import { Plus, MoreHorizontal, Edit, Trash2, CheckCircle, XCircle, Clock, Search } from "lucide-react";
+import { Plus, MoreHorizontal, Edit, Trash2, CheckCircle, XCircle, Clock, Search, UserMinus, X } from "lucide-react";
 import { useToast } from "@/lib/toast";
 
 type TenantStatus = "active" | "inactive" | "pending";
@@ -89,28 +89,13 @@ function getTenantStatus(tenant: Tenant): TenantStatus {
   return tenant.isActive ? "active" : "inactive";
 }
 
-// Custom debounce hook
-function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-}
+import { useDebounce } from "@/hooks/useDebounce";
 
 export default function TenantsPage() {
   const [searchInput, setSearchInput] = useState("");
   const [cursor, setCursor] = useState<string | undefined>(undefined);
   const [hasMore, setHasMore] = useState(false);
-  const debouncedSearch = useDebounce(searchInput, 300);
+  const debouncedSearch = useDebounce(searchInput, 500);
   
   // Reset cursor when search changes
   useEffect(() => {
@@ -127,13 +112,16 @@ export default function TenantsPage() {
   
   const tenants = tenantsData?.tenants ?? [];
   const deleteTenant = useMutation(api.tenants.deleteTenant);
+  const endLease = useMutation(api.tenants.endLease);
   const updateStatus = useMutation(api.tenants.updateStatus);
   const { addToast } = useToast();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
   const [deletingTenant, setDeletingTenant] = useState<Tenant | null>(null);
+  const [endingLeaseTenant, setEndingLeaseTenant] = useState<Tenant | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isEndingLease, setIsEndingLease] = useState(false);
   const [updatingStatusId, setUpdatingStatusId] = useState<Id<"tenants"> | null>(null);
 
   const handleEdit = (tenant: Tenant) => {
@@ -155,6 +143,23 @@ export default function TenantsPage() {
       addToast(errorMessage, "error");
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleEndLease = async () => {
+    if (!endingLeaseTenant) return;
+    
+    setIsEndingLease(true);
+    try {
+      await endLease({ id: endingLeaseTenant._id });
+      setEndingLeaseTenant(null);
+      addToast("تم إنهاء عقد المستأجر بنجاح وتغيير حالة الشقة إلى فارغة", "success");
+    } catch (error: unknown) {
+      console.error("Error ending lease:", error);
+      const errorMessage = error instanceof Error ? error.message : "حدث خطأ أثناء إنهاء العقد";
+      addToast(errorMessage, "error");
+    } finally {
+      setIsEndingLease(false);
     }
   };
 
@@ -234,11 +239,19 @@ export default function TenantsPage() {
             <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
               type="text"
-              placeholder="البحث بالاسم أو رقم الهاتف..."
+              placeholder="البحث بالاسم أو رقم الهاتف أو الرقم القومي..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="pr-10 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+              className="pr-10 pl-10 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
             />
+            {searchInput && (
+              <button
+                onClick={() => setSearchInput("")}
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 focus:outline-none"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -314,6 +327,15 @@ export default function TenantsPage() {
                           <Edit className="h-4 w-4" />
                           تعديل
                         </DropdownMenuItem>
+                        {status !== "inactive" && (
+                          <DropdownMenuItem
+                            onClick={() => setEndingLeaseTenant(tenant)}
+                            className="flex items-center gap-2 cursor-pointer text-orange-600 focus:bg-orange-50 focus:text-orange-600 dark:focus:bg-orange-900/20 dark:text-orange-400"
+                          >
+                            <UserMinus className="h-4 w-4" />
+                            إنهاء العقد
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem
                           onClick={() => setDeletingTenant(tenant)}
                           className="flex items-center gap-2 cursor-pointer text-red-600 focus:bg-red-50 focus:text-red-600 dark:focus:bg-red-900/20 dark:text-red-400"
@@ -415,6 +437,15 @@ export default function TenantsPage() {
                                 <Edit className="h-4 w-4" />
                                 تعديل
                               </DropdownMenuItem>
+                              {status !== "inactive" && (
+                                <DropdownMenuItem
+                                  onClick={() => setEndingLeaseTenant(tenant)}
+                                  className="flex items-center gap-2 cursor-pointer text-orange-600 focus:bg-orange-50 focus:text-orange-600 dark:focus:bg-orange-900/20 dark:text-orange-400"
+                                >
+                                  <UserMinus className="h-4 w-4" />
+                                  إنهاء العقد
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem
                                 onClick={() => setDeletingTenant(tenant)}
                                 className="flex items-center gap-2 cursor-pointer text-red-600 focus:bg-red-50 focus:text-red-600 dark:focus:bg-red-900/20 dark:text-red-400"
@@ -481,6 +512,38 @@ export default function TenantsPage() {
                 className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
               >
                 {isDeleting ? "جاري الحذف..." : "حذف"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* End Lease Confirmation Dialog */}
+        <AlertDialog
+          open={!!endingLeaseTenant}
+          onOpenChange={(open) => {
+            if (!open) {
+              setEndingLeaseTenant(null);
+            }
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>تأكيد إنهاء العقد</AlertDialogTitle>
+              <AlertDialogDescription>
+                هل أنت متأكد من إنهاء عقد المستأجر {endingLeaseTenant?.name}؟ 
+                سيتم تغيير حالة الشقة إلى فارغة.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setEndingLeaseTenant(null)}>
+                إلغاء
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleEndLease}
+                disabled={isEndingLease}
+                className="bg-orange-600 hover:bg-orange-700 focus:ring-orange-600"
+              >
+                {isEndingLease ? "جاري الإنهاء..." : "إنهاء العقد"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

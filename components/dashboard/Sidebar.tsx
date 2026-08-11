@@ -13,6 +13,7 @@ import {
   Menu,
   X,
   LogOut,
+  LogIn,
   User,
   BarChart,
   FolderOpen,
@@ -36,7 +37,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { user, signOut, isAuthenticated } = useAuth();
+  const { user, signOut, isAuthenticated, isLoading } = useAuth();
 
   const handleNavClick = () => {
     setIsMobileMenuOpen(false);
@@ -44,6 +45,10 @@ export function Sidebar() {
 
   const handleSignOut = async () => {
     await signOut();
+    router.push("/sign-in");
+  };
+
+  const handleSignIn = () => {
     router.push("/sign-in");
   };
 
@@ -105,33 +110,56 @@ export function Sidebar() {
           })}
         </nav>
 
-        {/* User Section */}
-        {isAuthenticated && user && (
-          <div className="border-t border-gray-800 dark:border-gray-700 p-4">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="flex items-center justify-center h-8 w-8 rounded-full bg-gray-700">
-                <User className="h-4 w-4 text-gray-300" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">
-                  {user.name || "Admin"}
-                </p>
-                <p className="text-xs text-gray-400 truncate">
-                  {user.email}
-                </p>
-              </div>
+        {/* User Section - Shows Sign In for unauthenticated, Sign Out for authenticated */}
+        <div className="border-t border-gray-800 dark:border-gray-700 p-4">
+          {/* Loading state */}
+          {isLoading && (
+            <div className="flex items-center justify-center py-2">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-400"></div>
             </div>
+          )}
+
+          {/* Authenticated - Show user info and Sign Out */}
+          {!isLoading && isAuthenticated && user && (
+            <>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-gray-700">
+                  <User className="h-4 w-4 text-gray-300" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-white truncate">
+                    {user.name || "Admin"}
+                  </p>
+                  <p className="text-xs text-gray-400 truncate">
+                    {user.email}
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSignOut}
+                className="w-full justify-start text-gray-400 hover:text-white hover:bg-gray-800"
+              >
+                <LogOut className="h-4 w-4 ml-2" />
+                {translations.signOut}
+              </Button>
+            </>
+          )}
+
+          {/* Not authenticated - Show Sign In button */}
+          {!isLoading && !isAuthenticated && (
             <Button
-              variant="ghost"
+              variant="default"
               size="sm"
-              onClick={handleSignOut}
-              className="w-full justify-start text-gray-400 hover:text-white hover:bg-gray-800"
+              onClick={handleSignIn}
+              className="w-full justify-start bg-blue-600 hover:bg-blue-700 text-white"
             >
-              <LogOut className="h-4 w-4 ml-2" />
-              Sign Out
+              <LogIn className="h-4 w-4 ml-2" />
+              {translations.signIn}
             </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </>
   );

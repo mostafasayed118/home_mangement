@@ -63,7 +63,8 @@ export function InvoiceFormModal({
   invoice,
   preselectedApartmentId,
 }: InvoiceFormModalProps) {
-  const apartments = useQuery(api.apartments.getAll);
+  const apartmentsData = useQuery(api.apartments.getAll, { limit: 100 });
+  const apartments = apartmentsData?.apartments;
   const generateUploadUrl = useMutation(api.invoices.generateUploadUrl);
   const createInvoice = useMutation(api.invoices.createInvoice);
   const updateInvoice = useMutation(api.invoices.updateInvoice);

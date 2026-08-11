@@ -7,15 +7,22 @@ import { BuildingGrid } from "@/components/dashboard/BuildingGrid";
 import { ExpiringLeasesAlert } from "@/components/dashboard/ExpiringLeasesAlert";
 import { DollarSign, TrendingUp, TrendingDown, Home, AlertCircle } from "lucide-react";
 import { formatCurrencyEGP, translations, getArabicPlural } from "@/lib/i18n";
+import { useMyCustomAuth } from "@/app/providers";
 
 export default function DashboardPage() {
-  // Fetch building stats
-  const stats = useQuery(api.payments.getBuildingStats);
-  const apartments = useQuery(api.apartments.getAll);
-  const payments = useQuery(api.payments.getCurrentMonth);
+  const { isAuthenticated } = useMyCustomAuth();
 
-  // Loading state
-  if (!stats || !apartments || !payments) {
+  // Skip all queries during sign-out transition to prevent "Unauthorized" errors.
+  // useQuery returns `undefined` when skipped, which is handled in the loading check below.
+  const stats = useQuery(api.payments.getBuildingStats, isAuthenticated ? undefined : "skip");
+  const apartmentsResult = useQuery(api.apartments.getAll, isAuthenticated ? { limit: 100 } : "skip");
+  const payments = useQuery(api.payments.getCurrentMonth, isAuthenticated ? undefined : "skip");
+
+  // Extract apartments array from paginated response
+  const apartments = apartmentsResult?.apartments ?? [];
+
+  // Show loading spinner if: not authenticated yet, or queries are still loading
+  if (!isAuthenticated || !stats || apartmentsResult === undefined || !payments) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>

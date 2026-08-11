@@ -55,6 +55,11 @@ export const translations = {
   // Status
   occupied: "مأجور",
 
+  // Auth
+  signIn: "تسجيل الدخول",
+  signOut: "تسجيل الخروج",
+  signUp: "إنشاء حساب",
+
   // Loading
   loading: "جاري التحميل...",
 

@@ -48,7 +48,8 @@ export function MaintenanceFormModal({
   onOpenChange,
   maintenance,
 }: MaintenanceFormModalProps) {
-  const apartments = useQuery(api.apartments.getAll);
+  const apartmentsData = useQuery(api.apartments.getAll, { limit: 100 });
+  const apartments = apartmentsData?.apartments;
   const addMaintenance = useMutation(api.maintenance.addMaintenanceRecord);
   const updateMaintenance = useMutation(api.maintenance.updateMaintenance);
 

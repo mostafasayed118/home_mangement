@@ -32,9 +32,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ApartmentFormModal } from "@/components/apartments/ApartmentFormModal";
-import { Plus, MoreHorizontal, Edit, Trash2, FileText } from "lucide-react";
+import { Plus, MoreHorizontal, Edit, Trash2, FileText, Search, X } from "lucide-react";
 import { useToast } from "@/lib/toast";
 import Link from "next/link";
+import { useDebounce } from "@/hooks/useDebounce";
+import { Input } from "@/components/ui/input";
 
 interface Apartment {
   _id: Id<"apartments">;
@@ -62,9 +64,19 @@ const statusColors: Record<string, string> = {
 };
 
 export default function ApartmentsPage() {
-  const apartments = useQuery(api.apartments.getAll);
+  const [searchInput, setSearchInput] = useState("");
+  const debouncedSearchTerm = useDebounce(searchInput, 500);
+
+  // Fetch apartments with search term
+  const apartmentsResult = useQuery(api.apartments.getAll, {
+    limit: 100,
+    searchTerm: debouncedSearchTerm
+  });
   const deleteApartment = useMutation(api.apartments.deleteApartment);
   const { addToast } = useToast();
+
+  // Extract apartments array from paginated response
+  const apartments = apartmentsResult?.apartments ?? [];
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingApartment, setEditingApartment] = useState<Apartment | null>(null);
@@ -78,7 +90,7 @@ export default function ApartmentsPage() {
 
   const handleDelete = async () => {
     if (!deletingApartment) return;
-    
+
     setIsDeleting(true);
     try {
       await deleteApartment({ id: deletingApartment._id });
@@ -98,7 +110,9 @@ export default function ApartmentsPage() {
     setEditingApartment(null);
   };
 
-  if (!apartments) {
+  // Loading state - check apartmentsResult === undefined to properly detect loading
+  // (apartments array is always defined via nullish coalescing, so we check the result object)
+  if (apartmentsResult === undefined) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
@@ -121,6 +135,28 @@ export default function ApartmentsPage() {
             <Plus className="h-4 w-4" />
             إضافة جديد
           </Button>
+        </div>
+
+        {/* Search Input */}
+        <div className="mb-6">
+          <div className="relative">
+            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              type="text"
+              placeholder="البحث برقم الشقة، الدور، أو الحالة..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="pr-10 pl-10 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+            />
+            {searchInput && (
+              <button
+                onClick={() => setSearchInput("")}
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 focus:outline-none"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Mobile Card View */}
@@ -283,7 +319,7 @@ export default function ApartmentsPage() {
             <AlertDialogHeader>
               <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
               <AlertDialogDescription>
-                هل أنت متأكد من حذف الشقة {deletingApartment?.unitLabel}؟ 
+                هل أنت متأكد من حذف الشقة {deletingApartment?.unitLabel}؟
                 هذا الإجراء لا يمكن التراجع عنه.
               </AlertDialogDescription>
             </AlertDialogHeader>

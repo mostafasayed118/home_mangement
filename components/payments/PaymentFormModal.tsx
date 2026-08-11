@@ -66,7 +66,8 @@ export function PaymentFormModal({
   payment,
 }: PaymentFormModalProps) {
   const tenants = useQuery(api.tenants.getActive);
-  const apartments = useQuery(api.apartments.getAll);
+  const apartmentsData = useQuery(api.apartments.getAll, { limit: 100 });
+  const apartments = apartmentsData?.apartments;
   const addPayment = useMutation(api.payments.addPayment);
   const updatePayment = useMutation(api.payments.updatePayment);
   const { addToast } = useToast();

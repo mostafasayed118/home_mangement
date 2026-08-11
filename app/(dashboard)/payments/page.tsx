@@ -88,9 +88,13 @@ const monthLabels: Record<number, string> = {
 };
 
 export default function PaymentsPage() {
-  const payments = useQuery(api.payments.getAll);
+  // Fetch payments with higher limit to show more items
+  const paymentsResult = useQuery(api.payments.getAll, { limit: 100 });
   const deletePayment = useMutation(api.payments.deletePayment);
   const { addToast } = useToast();
+
+  // Extract payments array from paginated response
+  const payments = paymentsResult?.payments ?? [];
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
@@ -137,7 +141,9 @@ export default function PaymentsPage() {
     return `${amount.toLocaleString()} ج.م`;
   };
 
-  if (!payments) {
+  // Loading state - check paymentsResult === undefined to properly detect loading
+  // (payments array is always defined via nullish coalescing, so we check the result object)
+  if (paymentsResult === undefined) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>

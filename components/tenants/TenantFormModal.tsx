@@ -51,7 +51,8 @@ export function TenantFormModal({
   onOpenChange,
   tenant,
 }: TenantFormModalProps) {
-  const apartments = useQuery(api.apartments.getAll);
+  const apartmentsData = useQuery(api.apartments.getAll, { limit: 100 });
+  const apartments = apartmentsData?.apartments;
   const addTenant = useMutation(api.tenants.addTenant);
   const updateTenant = useMutation(api.tenants.updateTenant);
   const generateContractUploadUrl = useMutation(api.tenants.generateContractUploadUrl);
@@ -77,6 +78,32 @@ export function TenantFormModal({
 
   // Egyptian mobile phone validation regex: must start with 010, 011, 012, or 015
   const EGYPTIAN_PHONE_REGEX = /^01[0125][0-9]{8}$/;
+  
+  // Egyptian National ID validation: must be exactly 14 digits
+  const NATIONAL_ID_REGEX = /^\d{14}$/;
+
+  /**
+   * Validate Egyptian National ID checksum
+   * Egyptian National ID uses a weighted checksum algorithm:
+   * - Weights: [7, 3, 1, 7, 3, 1, 7, 3, 1, 7, 3, 1, 7]
+   * - Check digit (14th) = sum of (digit * weight) mod 10
+   */
+  const validateNationalIdChecksum = (id: string): boolean => {
+    if (!id || id.length !== 14) return false;
+    
+    const weights = [7, 3, 1, 7, 3, 1, 7, 3, 1, 7, 3, 1, 7];
+    let sum = 0;
+    
+    for (let i = 0; i < 13; i++) {
+      const digit = parseInt(id[i], 10);
+      sum += digit * weights[i];
+    }
+    
+    const checkDigit = sum % 10;
+    const providedCheckDigit = parseInt(id[13], 10);
+    
+    return checkDigit === providedCheckDigit;
+  };
 
   const validatePhone = (phoneNumber: string): boolean => {
     if (!phoneNumber) {
@@ -189,6 +216,20 @@ export function TenantFormModal({
     try {
       // Validate phone number
       if (!validatePhone(phone)) {
+        setIsLoading(false);
+        return;
+      }
+
+      // Validate National ID - must be exactly 14 digits for Egyptian IDs (if provided)
+      if (nationalId && !NATIONAL_ID_REGEX.test(nationalId)) {
+        setError("الرقم القومي يجب أن يتكون من 14 رقم");
+        setIsLoading(false);
+        return;
+      }
+
+      // Validate National ID checksum (if provided)
+      if (nationalId && !validateNationalIdChecksum(nationalId)) {
+        setError("الرقم القومي غير صحيح");
         setIsLoading(false);
         return;
       }
@@ -470,9 +511,33 @@ export function TenantFormModal({
               إلغاء
             </Button>
             <Button type="submit" disabled={isLoading || isUploadingContract}>
-              {isLoading || isUploadingContract 
-                ? (isUploadingContract ? "جاري رفع العقد..." : "جاري الحفظ...") 
-                : (isEdit ? "تحديث" : "إضافة")}
+              {isLoading || isUploadingContract ? (
+                <div className="flex items-center gap-2">
+                  <svg
+                    className="animate-spin h-4 w-4"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  {isUploadingContract ? "جاري رفع العقد..." : "جاري الحفظ..."}
+                </div>
+              ) : (
+                isEdit ? "تحديث" : "إضافة"
+              )}
             </Button>
           </DialogFooter>
         </form>
