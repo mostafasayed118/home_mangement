@@ -1,4 +1,4 @@
-export default {
+const authConfig = {
   providers: [
     {
       // IMPORTANT: must be the Convex site URL (publicly accessible from Convex Cloud)
@@ -8,3 +8,5 @@ export default {
     },
   ],
 };
+
+export default authConfig;

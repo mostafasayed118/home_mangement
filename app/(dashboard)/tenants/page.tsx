@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
@@ -266,7 +266,6 @@ export default function TenantsPage() {
               const status = getTenantStatus(tenant);
               const statusInfo = statusConfig[status];
               const StatusIcon = statusInfo.icon;
-              const isUpdating = updatingStatusId === tenant._id;
               
               return (
                 <div
@@ -381,7 +380,6 @@ export default function TenantsPage() {
                     const status = getTenantStatus(tenant);
                     const statusInfo = statusConfig[status];
                     const StatusIcon = statusInfo.icon;
-                    const isUpdating = updatingStatusId === tenant._id;
                     
                     return (
                       <TableRow key={tenant._id}>

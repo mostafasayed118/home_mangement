@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { verifyToken, validateProductionJwtSecret } from "./lib/jwt";
+import { verifyToken } from "./lib/jwt";
 
 // Public routes that don't require authentication
 // Include all auth pages, API routes, static files, etc.

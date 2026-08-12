@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "convex/react";
+import { useSyncExternalStore } from "react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { AlertTriangle, Building, Calendar, ArrowRight } from "lucide-react";
@@ -22,6 +23,16 @@ export function ExpiringLeasesAlert() {
   // Get tenants with leases expiring in the next 30 days
   const expiringLeases = useQuery(api.tenants.getExpiringLeases, { daysAhead: 30 }) as ExpiringTenant[] | undefined;
 
+  // Subscribe to a 60s clock so the lease countdown stays fresh without
+  // calling Date.now() during render (react-hooks/purity).
+  const now = useSyncExternalStore(
+    (onStoreChange) => {
+      const id = setInterval(onStoreChange, 60_000);
+      return () => clearInterval(id);
+    },
+    () => Date.now()
+  );
+
   if (!expiringLeases || expiringLeases.length === 0) {
     return null;
   }
@@ -30,7 +41,6 @@ export function ExpiringLeasesAlert() {
   const sortedLeases = [...expiringLeases].sort((a, b) => a.leaseEndDate - b.leaseEndDate);
 
   const getDaysRemaining = (endDate: number) => {
-    const now = Date.now();
     const days = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
     return days;
   };

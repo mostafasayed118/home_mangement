@@ -49,7 +49,7 @@ export async function verifyJwtToken(token: string) {
       name: payload.name as string,
       role: payload.role as string,
     };
-  } catch (error) {
+  } catch (_error) {
     return null;
   }
 }

@@ -29,7 +29,7 @@ export function useMyCustomAuth() {
   const [token, setToken] = useState<string | null>(
     () => _serverToken || (typeof window !== "undefined" ? localStorage.getItem("convex_token") || getCookie("auth_token") : null)
   );
-  const [isLoading, setIsLoading] = useState(false); // no loading needed — token is already known
+  const [isLoading] = useState(false); // no loading needed — token is already known
 
   // Keep token in sync after mount (handles login / logout events)
   useEffect(() => {
@@ -60,7 +60,7 @@ export function useMyCustomAuth() {
   }, []);
 
   const fetchAccessToken = useCallback(
-    async ({ forceRefreshToken }: { forceRefreshToken: boolean }) => {
+    async ({ forceRefreshToken: _forceRefreshToken }: { forceRefreshToken: boolean }) => {
       return (
         token ||
         localStorage.getItem("convex_token") ||

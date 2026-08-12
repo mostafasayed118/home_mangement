@@ -10,8 +10,8 @@
  * Run with: npx convex run --script scripts/seed.ts
  */
 
-import { internalMutation } from "../convex/_generated/server";
-import { v } from "convex/values";
+import { internalMutation, type MutationCtx } from "../convex/_generated/server";
+import type { Id } from "../convex/_generated/dataModel";
 
 const apartmentsData = [
   { floor: 1, unitNumber: "A", unitLabel: "1-A", rentAmount: 600 },
@@ -51,7 +51,7 @@ const maintenanceTitles = [
   { title: "Window seal repair", cost: 120 },
 ];
 
-async function seed(ctx: any) {
+async function seed(ctx: MutationCtx) {
   const now = Date.now();
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
@@ -63,7 +63,7 @@ async function seed(ctx: any) {
   leaseEnd.setMonth(leaseEnd.getMonth() + 6);
 
   // Create apartments
-  const apartmentIds: string[] = [];
+  const apartmentIds: Id<"apartments">[] = [];
   for (const apt of apartmentsData) {
     const id = await ctx.db.insert("apartments", {
       ...apt,
@@ -76,7 +76,7 @@ async function seed(ctx: any) {
   }
 
   // Create tenants
-  const tenantIds: string[] = [];
+  const tenantIds: Id<"tenants">[] = [];
   for (let i = 0; i < apartmentIds.length; i++) {
     const id = await ctx.db.insert("tenants", {
       apartmentId: apartmentIds[i],

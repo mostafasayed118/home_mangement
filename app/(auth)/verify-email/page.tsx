@@ -52,7 +52,7 @@ function VerifyEmailForm() {
         } else {
           setError(result.error || "Failed to verify email");
         }
-      } catch (err) {
+      } catch (_err) {
         setError("An unexpected error occurred");
       } finally {
         setIsVerifying(false);
@@ -95,7 +95,7 @@ function VerifyEmailForm() {
           variant: "error",
         });
       }
-    } catch (err) {
+    } catch (_err) {
       toast({
         title: "Error",
         description: "An unexpected error occurred",

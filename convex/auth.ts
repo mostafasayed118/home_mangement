@@ -111,7 +111,7 @@ export const signUp = mutation({
     // Check if user already exists
     const existingUser = await ctx.db
       .query("users")
-      .withIndex("by_email", (q: any) => q.eq("email", args.email.toLowerCase()))
+      .withIndex("by_email", (q) => q.eq("email", args.email.toLowerCase()))
       .first();
 
     if (existingUser) {
@@ -237,7 +237,7 @@ export const requestPasswordReset = mutation({
   handler: async (ctx, args) => {
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q: any) => q.eq("email", args.email.toLowerCase()))
+      .withIndex("by_email", (q) => q.eq("email", args.email.toLowerCase()))
       .first();
 
     // Always return success to prevent email enumeration
@@ -337,7 +337,7 @@ export const resendVerificationEmail = mutation({
   handler: async (ctx, args) => {
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q: any) => q.eq("email", args.email.toLowerCase()))
+      .withIndex("by_email", (q) => q.eq("email", args.email.toLowerCase()))
       .first();
 
     if (!user) {
@@ -386,7 +386,7 @@ export const getUserForAuth = query({
   handler: async (ctx, args) => {
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q: any) => q.eq("email", args.email.toLowerCase()))
+      .withIndex("by_email", (q) => q.eq("email", args.email.toLowerCase()))
       .first();
 
     if (!user) {

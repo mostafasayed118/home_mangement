@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,6 @@ function ResetPasswordForm() {
   const [isSuccess, setIsSuccess] = useState(false);
   
   const { resetPassword } = useAuth();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
   
@@ -123,7 +122,7 @@ function ResetPasswordForm() {
           variant: "error",
         });
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Error",
         description: "An unexpected error occurred",

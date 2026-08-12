@@ -1,4 +1,4 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, type QueryCtx, type MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
 
 // Default page size for pagination
@@ -12,7 +12,7 @@ const MAX_PAGE_SIZE = 100;
  * SECURITY: This function ONLY uses server-side authentication context.
  * It NEVER accepts client-supplied email or user data for authorization.
  */
-async function requireAdmin(ctx: any): Promise<{ isAdmin: boolean; userId: string }> {
+async function requireAdmin(ctx: QueryCtx | MutationCtx): Promise<{ isAdmin: boolean; userId: string }> {
   // Always use server-side authentication - NEVER trust client-supplied data
   const identity = await ctx.auth.getUserIdentity();
   
@@ -28,7 +28,7 @@ async function requireAdmin(ctx: any): Promise<{ isAdmin: boolean; userId: strin
   
   const user = await ctx.db
     .query("users")
-    .withIndex("by_email", (q: any) => q.eq("email", userEmail))
+    .withIndex("by_email", (q) => q.eq("email", userEmail))
     .first();
   
   if (!user) {

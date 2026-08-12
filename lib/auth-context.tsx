@@ -6,16 +6,6 @@ import { api } from "../convex/_generated/api";
 import { Id } from "../convex/_generated/dataModel";
 import { setCookie, deleteCookie, getCookie } from "./cookies";
 
-// Simple SHA-256 hash function using Web Crypto API for client-side password hashing
-// This adds an extra layer of security by not sending plaintext passwords over the network
-async function hashPassword(password: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
 interface User {
   _id: Id<"users">;
   email: string;
@@ -283,7 +273,7 @@ export function AuthProvider({ children, initialToken }: AuthProviderProps) {
     }
   }, [resendVerificationMutation]);
 
-  const fetchAccessToken = useCallback(async ({ forceRefreshToken }: { forceRefreshToken: boolean }) => {
+  const fetchAccessToken = useCallback(async ({ forceRefreshToken: _forceRefreshToken }: { forceRefreshToken: boolean }) => {
     return token || getCookie("auth_token") || null;
   }, [token]);
 

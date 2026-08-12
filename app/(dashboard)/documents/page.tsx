@@ -162,7 +162,7 @@ export default function DocumentsPage() {
         try {
           const responseJson = JSON.parse(responseText);
           storageId = responseJson.storageId || null;
-        } catch (e) {
+        } catch (_e) {
           console.error("Failed to parse response:", responseText);
         }
       }
@@ -271,7 +271,7 @@ export default function DocumentsPage() {
           try {
             const responseJson = JSON.parse(responseText);
             storageId = responseJson.storageId || null;
-          } catch (e) {
+          } catch (_e) {
             console.error("Failed to parse response:", responseText);
           }
         }

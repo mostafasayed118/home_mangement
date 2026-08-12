@@ -18,7 +18,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -408,6 +407,7 @@ export default function InvoicesPage() {
             </DialogHeader>
             {viewingImage && (
               <div className="flex justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={viewingImage}
                   alt="صورة الإيصال"

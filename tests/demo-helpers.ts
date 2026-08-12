@@ -1,4 +1,4 @@
-import { type Page, type Locator } from "@playwright/test";
+import { type Page } from "@playwright/test";
 
 export const DEMO_EMAIL = process.env.DEMO_EMAIL || "admin@example.com";
 export const DEMO_PASSWORD = process.env.DEMO_PASSWORD || "Password123!";

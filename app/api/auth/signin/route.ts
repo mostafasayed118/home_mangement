@@ -1,13 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import crypto from "crypto";
-import { SignJWT } from "jose";
-import { getJwtSecret, timingSafeCompare, generateJwtToken } from "../../../../lib/jwt";
+import { timingSafeCompare, generateJwtToken } from "../../../../lib/jwt";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
-
-// Token expiration
-const SESSION_TOKEN_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 // PBKDF2 configuration - 100,000 iterations (OWASP recommended minimum)
 const PBKDF2_ITERATIONS = 100000;
@@ -47,7 +43,7 @@ function initializeRateLimiter() {
 }
 
 // Initialize on module load
-const redisAvailable = initializeRateLimiter();
+initializeRateLimiter();
 
 // In-memory fallback rate limiter
 // NOTE: This is for development/demo only. In production with multiple instances,
@@ -204,16 +200,6 @@ async function applyRateLimit(email: string): Promise<{ allowed: boolean; respon
 function isValidEmail(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
-}
-
-// Get environment
-function isProduction(): boolean {
-  return process.env.NODE_ENV === "production";
-}
-
-// Generate a secure random token using crypto (for verification tokens)
-function generateOpaqueToken(): string {
-  return crypto.randomBytes(32).toString("hex");
 }
 
 // Hash password using PBKDF2 (matching Convex backend)

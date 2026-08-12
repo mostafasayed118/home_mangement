@@ -165,7 +165,7 @@ export function TenantFormModal({
         try {
           const responseJson = JSON.parse(responseText);
           storageId = responseJson.storageId || null;
-        } catch (e) {
+        } catch (_e) {
           console.error("Failed to parse response:", responseText);
         }
       }
@@ -250,8 +250,6 @@ export function TenantFormModal({
         // For edit mode, we need to check if apartment changed
         // The updateTenant mutation doesn't include apartmentId
         // So we handle the apartment change separately
-        const currentTenant = tenant;
-        
         await updateTenant({
           id: tenant._id,
           name,

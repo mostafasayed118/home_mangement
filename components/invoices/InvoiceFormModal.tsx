@@ -23,7 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Upload, X, FileImage, Loader2 } from "lucide-react";
+import { Upload, X, Loader2 } from "lucide-react";
 import { useToast } from "@/lib/toast";
 
 interface InvoiceFormModalProps {
@@ -417,6 +417,7 @@ export function InvoiceFormModal({
                 {/* Preview or upload button */}
                 {previewUrl ? (
                   <div className="relative inline-block">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={previewUrl}
                       alt="معاينة الإيصال"

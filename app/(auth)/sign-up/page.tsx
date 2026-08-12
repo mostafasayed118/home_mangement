@@ -97,7 +97,7 @@ export default function SignUpPage() {
           variant: "error",
         });
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "خطأ",
         description: "حدث خطأ غير متوقع",

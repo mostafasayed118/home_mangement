@@ -1,5 +1,6 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, type QueryCtx, type MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
+import type { Doc } from "./_generated/dataModel";
 
 /**
  * Authorization helper function
@@ -11,7 +12,7 @@ import { v } from "convex/values";
  * For JWT-based auth, the client passes the JWT token via HTTP header,
  * and we validate it server-side before allowing mutations.
  */
-async function requireAdmin(ctx: any): Promise<{ isAdmin: boolean; userId: string }> {
+async function requireAdmin(ctx: QueryCtx | MutationCtx): Promise<{ isAdmin: boolean; userId: string }> {
   // Always use server-side authentication - NEVER trust client-supplied data
   const identity = await ctx.auth.getUserIdentity();
 
@@ -31,7 +32,7 @@ async function requireAdmin(ctx: any): Promise<{ isAdmin: boolean; userId: strin
   // Look up user in database to check role
   const user = await ctx.db
     .query("users")
-    .withIndex("by_email", (q: any) => q.eq("email", userEmail))
+    .withIndex("by_email", (q) => q.eq("email", userEmail))
     .first();
 
   if (!user) {
@@ -72,7 +73,7 @@ export const getAll = query({
     const NUM_RESULTS = args.numResults ?? 50; // Default 50, can be overridden
     const searchTerm = args.search?.trim();
 
-    let tenants: any[] = [];
+    let tenants: Doc<"tenants">[] = [];
     let continueCursor: string | null = null;
     let hasMore = false;
 
@@ -305,7 +306,7 @@ export const addTenant = mutation({
     // Authorization check - only admins can add tenants
     // SECURITY: We NEVER use client-supplied data for authorization
     // The requireAdmin function uses server-side authentication only
-    const authResult = await requireAdmin(ctx);
+    await requireAdmin(ctx);
 
     // Validate lease dates - end date must be after start date
     // Use getTime() for direct timestamp comparison to avoid timezone issues

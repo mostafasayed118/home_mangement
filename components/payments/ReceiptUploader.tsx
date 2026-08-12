@@ -5,7 +5,7 @@ import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Upload, X, Image as ImageIcon, Loader2 } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
 
 interface ReceiptUploaderProps {
   onUploadComplete: (storageId: string) => void;
@@ -96,6 +96,7 @@ export function ReceiptUploader({
 
       {previewUrl ? (
         <div className="relative border rounded-md overflow-hidden w-full max-w-[200px]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={previewUrl}
             alt="Receipt"

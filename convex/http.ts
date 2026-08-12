@@ -9,7 +9,7 @@ const http = httpRouter();
 http.route({
   path: "/.well-known/openid-configuration",
   method: "GET",
-  handler: httpAction(async (ctx, request) => {
+  handler: httpAction(async (_ctx, _request) => {
     const siteUrl = process.env.CONVEX_SITE_URL;
     return new Response(
       JSON.stringify({
@@ -35,7 +35,7 @@ http.route({
 http.route({
   path: "/api/auth/jwks",
   method: "GET",
-  handler: httpAction(async (ctx, request) => {
+  handler: httpAction(async (_ctx, _request) => {
     return new Response(
       JSON.stringify({
         keys: [

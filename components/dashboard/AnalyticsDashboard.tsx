@@ -14,6 +14,31 @@ import {
 import { Building2, TrendingUp, Home, DollarSign } from "lucide-react";
 import { formatCurrencyEGP } from "@/lib/i18n";
 
+type CustomTooltipProps = {
+  active?: boolean;
+  payload?: Array<{ name?: string; value?: number }>;
+  totalApartments: number;
+};
+
+// Hoisted to module scope: creating components during render resets their
+// state on every parent re-render (react-hooks/static-components).
+function CustomTooltip({ active, payload, totalApartments }: CustomTooltipProps) {
+  if (active && payload && payload.length) {
+    const data = payload[0];
+    return (
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 shadow-md">
+        <p className="font-medium text-gray-900 dark:text-white">
+          {data.name}: <span className="text-primary">{data.value}</span>
+        </p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          {Math.round(((data.value ?? 0) / totalApartments) * 100)}% of total
+        </p>
+      </div>
+    );
+  }
+  return null;
+}
+
 // Chart colors
 const COLORS = {
   occupied: "#22c55e", // Green
@@ -92,24 +117,6 @@ export function AnalyticsDashboard() {
   // Filter out empty values for the chart
   const activeChartData = chartData.filter(d => d.value > 0);
 
-  // Custom tooltip for the chart
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0];
-      return (
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 shadow-md">
-          <p className="font-medium text-gray-900 dark:text-white">
-            {data.name}: <span className="text-primary">{data.value}</span>
-          </p>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            {Math.round((data.value / stats.totalApartments) * 100)}% of total
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
-
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
@@ -187,7 +194,7 @@ export function AnalyticsDashboard() {
                     />
                   ))}
                 </Pie>
-                <Tooltip content={<CustomTooltip />} />
+                <Tooltip content={<CustomTooltip totalApartments={stats.totalApartments} />} />
                 <Legend 
                   verticalAlign="bottom" 
                   height={36}

@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
@@ -18,11 +18,7 @@ function SignInForm() {
   const [needsVerification, setNeedsVerification] = useState(false);
   
   const { signIn, resendVerification } = useAuth();
-  const router = useRouter();
-  const searchParams = useSearchParams();
   const { toast } = useToast();
-  
-  const redirect = searchParams.get("redirect") || "/";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,7 +52,7 @@ function SignInForm() {
           variant: "destructive",
         });
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "خطأ",
         description: "حدث خطأ غير متوقع",
@@ -84,7 +80,7 @@ function SignInForm() {
           variant: "destructive",
         });
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "خطأ",
         description: "حدث خطأ غير متوقع",

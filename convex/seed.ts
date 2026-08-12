@@ -1,4 +1,5 @@
 import { internalMutation } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 
 /**
  * Seed the database with sample data
@@ -47,7 +48,7 @@ export const seed = internalMutation({
     leaseEnd.setMonth(leaseEnd.getMonth() + 6);
 
     // Create apartments
-    const apartmentIds: string[] = [];
+    const apartmentIds: Id<"apartments">[] = [];
     for (const apt of apartmentsData) {
       const id = await ctx.db.insert("apartments", {
         ...apt,
@@ -58,12 +59,11 @@ export const seed = internalMutation({
       apartmentIds.push(id);
     }
 
-    // Create tenants - properly typed as any to avoid TypeScript issues with Convex Id types
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const tenantIds: any[] = [];
+    // Create tenants
+    const tenantIds: Id<"tenants">[] = [];
     for (let i = 0; i < apartmentIds.length; i++) {
       const id = await ctx.db.insert("tenants", {
-        apartmentId: apartmentIds[i] as any,
+        apartmentId: apartmentIds[i],
         name: tenantNames[i],
         phone: `555-${String(1000 + i).padStart(4, "0")}`,
         nationalId: `ID-${String(10000000 + i)}`,
@@ -89,7 +89,7 @@ export const seed = internalMutation({
 
       await ctx.db.insert("payments", {
         tenantId: tenantIds[i],
-        apartmentId: apartmentIds[i] as any,
+        apartmentId: apartmentIds[i],
         amount,
         dueDate: new Date(currentYear, currentMonth - 1, 5).getTime(),
         paymentDate,
@@ -116,7 +116,7 @@ export const seed = internalMutation({
       maintenanceDate.setDate(maintenanceDate.getDate() - (i * 5));
 
       await ctx.db.insert("maintenance", {
-        apartmentId: apartmentIds[i % apartmentIds.length] as any,
+        apartmentId: apartmentIds[i % apartmentIds.length],
         title: m.title,
         cost: m.cost,
         date: maintenanceDate.getTime(),

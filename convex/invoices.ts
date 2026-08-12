@@ -1,6 +1,6 @@
-import { query, mutation, internalMutation } from "./_generated/server";
+import { query, mutation, internalMutation, type QueryCtx, type MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
-import { Doc, Id } from "./_generated/dataModel";
+import { Doc } from "./_generated/dataModel";
 
 /**
  * Type for enriched invoice with apartment and receipt URL
@@ -17,7 +17,7 @@ type EnrichedInvoice = Doc<"invoices"> & {
  * SECURITY: This function ONLY uses server-side authentication context.
  * It NEVER accepts client-supplied email or user data for authorization.
  */
-async function requireAdmin(ctx: any): Promise<{ isAdmin: boolean; userId: string }> {
+async function requireAdmin(ctx: QueryCtx | MutationCtx): Promise<{ isAdmin: boolean; userId: string }> {
   // Always use server-side authentication - NEVER trust client-supplied data
   const identity = await ctx.auth.getUserIdentity();
 
@@ -33,7 +33,7 @@ async function requireAdmin(ctx: any): Promise<{ isAdmin: boolean; userId: strin
 
   const user = await ctx.db
     .query("users")
-    .withIndex("by_email", (q: any) => q.eq("email", userEmail))
+    .withIndex("by_email", (q) => q.eq("email", userEmail))
     .first();
 
   if (!user) {
@@ -51,7 +51,7 @@ async function requireAdmin(ctx: any): Promise<{ isAdmin: boolean; userId: strin
  * Helper function to enrich a single invoice with apartment info and receipt URL
  */
 async function enrichInvoice(
-  ctx: any,
+  ctx: QueryCtx | MutationCtx,
   invoice: Doc<"invoices">
 ): Promise<EnrichedInvoice> {
   const apartment = await ctx.db.get(invoice.apartmentId);
@@ -72,7 +72,7 @@ async function enrichInvoice(
  * Helper function to enrich multiple invoices with apartment info and receipt URLs
  */
 async function enrichInvoices(
-  ctx: any,
+  ctx: QueryCtx | MutationCtx,
   invoices: Doc<"invoices">[]
 ): Promise<EnrichedInvoice[]> {
   return Promise.all(

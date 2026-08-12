@@ -4,7 +4,7 @@ import { sendVerificationEmail, sendPasswordResetEmail, sendWelcomeEmail } from 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { type, email, token, name, amount, dueDate } = body;
+    const { type, email, token, name } = body;
 
     let result;
 
